@@ -39,10 +39,14 @@ class BookingCalendar():
     def input_availability(period_list: Period):
         pass
         # Pass availability periods to database here
+        # When inputting need to check if an input already exists, especially with recurring availability
 
     def parse_available_periods(input):
         pass
         # parse stream of availability here and create Period objects from it
+
+    def generate_recurring_dates():
+        pass
 
 def  main():
     pass
