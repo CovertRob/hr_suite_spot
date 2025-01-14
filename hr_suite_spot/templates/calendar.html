@@ -1,0 +1,23 @@
+{% extends 'layout_2.html' %}
+
+{% block content %}
+<section id="hero-1946">
+<div class="cs-container">
+    
+  <form method="post" action="/calendar">
+    <ul>
+        {% for day in days_of_week %}
+        <li id = day_of_week>
+          <label for="{{ day }}">
+            <span class="day-label">{{ day }}:</span>
+            <input name="{{ day }}" id="{{ day }}" value="{{ request.form.day | default('') }}"/>
+          </label>
+        </li>
+        {% endfor %}
+      </ul>
+      
+    <button type="submit">Submit Availability</button>
+  </form>
+</div>
+</section>
+{% endblock %}

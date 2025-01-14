@@ -260,4 +260,17 @@ body {
       max-width: 39.375rem;
     }
   }
+
+  .day-label {
+    display: inline-block;
+    width: 100px; /* Set a fixed width for alignment */
+    text-align: right; /* Align text to the right */
+    margin-right: 10px; /* Space between label and input */
+    
+  }
+
+  #day_of_week {
+    list-style-type: none;
+  }
+  
                                   

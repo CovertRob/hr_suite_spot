@@ -1,7 +1,9 @@
-from flask import Flask, render_template, request, jsonify
-from booking import calendar
+from flask import Flask, render_template, request, jsonify, flash, redirect
+import secrets
 
 app = Flask(__name__)
+
+app.secret_key = secrets.token_hex(32)
 
 # Landing page
 @app.route("/")
@@ -25,9 +27,17 @@ def get_services():
 def get_contact():
     return render_template('contact.html')
 
-@app.route("/calendar")
+@app.route("/calendar", methods=['GET'])
 def get_calendar():
-    return calendar.create_calendar()
+    days_of_week = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+    return render_template('calendar.html', days_of_week=days_of_week)
+
+@app.route("/calendar", methods=["POST"])
+def submit_availability():
+    availability = request.form
+    print(availability['Monday'])
+    flash("Availability submitted")
+    return redirect('/calendar')
 
 if __name__ == '__main__':
     app.run(debug=True, port=5003)
