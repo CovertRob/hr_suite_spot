@@ -272,5 +272,28 @@ body {
   #day_of_week {
     list-style-type: none;
   }
+
+  .flash {
+    max-width: 960px;
+    padding: 10px 20px;
+    margin: 20px auto 1.5em auto;
+    color: #0b0b0b;
+    background: #f4f4f5;
+  }
+  
+  .flash p {
+    font-size: 14px;
+    font-weight: bold;
+  }
+  
+  .flash.error {
+    color: #ff6633;
+    background: #FFCFBF;
+  }
+  
+  .flash.success {
+    color: #33cc99;
+    background: #CBF2E5;
+  }
   
                                   

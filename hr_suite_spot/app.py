@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, jsonify, flash, redirect
 import secrets
+from booking import database # This is the database persistance module, all interactions with google calendar API module should take place here
 
 app = Flask(__name__)
 
@@ -35,9 +36,15 @@ def get_calendar():
 @app.route("/calendar", methods=["POST"])
 def submit_availability():
     availability = request.form
-    print(availability['Monday'])
-    flash("Availability submitted")
+    # Need to check / sanitize input here, create util function
+    database.insert_availability(availability)
+    flash("Availability submitted", "succcess")
     return redirect('/calendar')
+
+@app.errorhandler(404)
+def error_handler(error):
+    flash(f"{error}", "error")
+    return redirect("/")
 
 if __name__ == '__main__':
     app.run(debug=True, port=5003)

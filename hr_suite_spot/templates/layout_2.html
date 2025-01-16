@@ -53,8 +53,7 @@
         </nav>
         
     </div>
-</header>
-{% with messages = get_flashed_messages(with_categories=true) %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
       {% for category, message in messages %}
         <div class="flash {{ category }}">
@@ -63,10 +62,14 @@
       {% endfor %}
     {% endif %}
   {% endwith %}
+</header>
+<body>
+
 <main>
 
     {% block content %}
     <!-- Filled in by the `content` block from another template file -->
     {% endblock %}
 </main>
+</body>
 </html>

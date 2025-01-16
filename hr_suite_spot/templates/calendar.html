@@ -10,7 +10,8 @@
         <li id = day_of_week>
           <label for="{{ day }}">
             <span class="day-label">{{ day }}:</span>
-            <input name="{{ day }}" id="{{ day }}" value="{{ request.form.day | default('') }}"/>
+            <input name="{{ day }}-start" id="start" placeholder="YEAR-MM-DD HH:MM:SS"/>
+            <input name="{{ day }}-end" id="end" placeholder="YEAR-MM-DD HH:MM:SS"/>
           </label>
         </li>
         {% endfor %}
