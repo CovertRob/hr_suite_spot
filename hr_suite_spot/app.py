@@ -1,10 +1,17 @@
-from flask import Flask, render_template, request, jsonify, flash, redirect
+from flask import Flask, render_template, request, jsonify, flash, redirect, g
 import secrets
 from booking import database # This is the database persistance module, all interactions with google calendar API module should take place here
 
-app = Flask(__name__)
+from booking import booking_utils as util
 
-app.secret_key = secrets.token_hex(32)
+def create_app():
+    app = Flask(__name__)
+    app.secret_key = secrets.token_hex(32)
+    with app.app_context():
+        g.database = database.DatabasePersistence()
+    return app
+
+app = create_app()
 
 # Landing page
 @app.route("/")
@@ -37,7 +44,17 @@ def get_calendar():
 def submit_availability():
     availability = request.form
     # Need to check / sanitize input here, create util function
-    database.insert_availability(availability)
+    # Currently only implementing one main avail period per day
+    
+    # With MultiDict type, use getlist to create a list for each day of the week with the begin and end time periods. Ex: {"Monday": ['begin', 'end']}
+    if not util.validate_availability_input_format(availability):
+        flash("Availability is not formatted correctly.", "error")
+        return redirect('/calendar')
+    # Convert to official ISO-format and verify no inputs in past
+    converted_input = util.convert_to_iso_with_tz(availability)
+    print(converted_input)
+
+    #g.db.insert_availability(availability)
     flash("Availability submitted", "succcess")
     return redirect('/calendar')
 

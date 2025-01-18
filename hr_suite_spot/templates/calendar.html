@@ -3,15 +3,15 @@
 {% block content %}
 <section id="hero-1946">
 <div class="cs-container">
-    
   <form method="post" action="/calendar">
+    <span>Please submit using 24hr time format. </span>
     <ul>
         {% for day in days_of_week %}
         <li id = day_of_week>
           <label for="{{ day }}">
             <span class="day-label">{{ day }}:</span>
-            <input name="{{ day }}-start" id="start" placeholder="YEAR-MM-DD HH:MM:SS"/>
-            <input name="{{ day }}-end" id="end" placeholder="YEAR-MM-DD HH:MM:SS"/>
+            <input name="{{ day }}" id="start" placeholder="YEAR-MM-DD HH:MM:SS PST"/>
+            <input name="{{ day }}" id="end" placeholder="YEAR-MM-DD HH:MM:SS PST"/>
           </label>
         </li>
         {% endfor %}

@@ -271,6 +271,11 @@ body {
 
   #day_of_week {
     list-style-type: none;
+    
+  }
+
+  input{
+    width:15rem
   }
 
   .flash {
