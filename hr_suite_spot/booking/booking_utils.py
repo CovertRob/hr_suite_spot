@@ -47,6 +47,9 @@ def convert_to_iso_with_tz(input: MultiDict) -> dict:
 
     Raises:
         TimeValidationError: If validation parameters not met. See TimeValidationError docs.
+
+    Output format:
+    {'Monday': ['2025-02-01T01:01:00-08:00', '2025-02-03T01:01:00-08:00']}
     """
     availability_in_iso = {}
     for key in input.keys():

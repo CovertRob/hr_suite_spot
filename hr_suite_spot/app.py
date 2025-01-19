@@ -1,17 +1,20 @@
 from flask import Flask, render_template, request, jsonify, flash, redirect, g
 import secrets
 from booking import database # This is the database persistance module, all interactions with google calendar API module should take place here
-
+from booking import error_utils
 from booking import booking_utils as util
 
 def create_app():
     app = Flask(__name__)
     app.secret_key = secrets.token_hex(32)
     with app.app_context():
-        g.database = database.DatabasePersistence()
+        g.db = database.DatabasePersistence()
     return app
 
 app = create_app()
+print(g.__dict__)
+
+# Create a custom decorator to iniitialize the db class in globabl g for prior to running the functions that neeed them.
 
 # Landing page
 @app.route("/")
@@ -51,11 +54,21 @@ def submit_availability():
         flash("Availability is not formatted correctly.", "error")
         return redirect('/calendar')
     # Convert to official ISO-format and verify no inputs in past
-    converted_input = util.convert_to_iso_with_tz(availability)
-    print(converted_input)
+    # Use try-catch block with convert_to_iso_with_tz
+    try:
+        converted_input = util.convert_to_iso_with_tz(availability)
+    except error_utils.TimeValidationError as e:
+        message = e.args[0] # arg 0 should be the message
+        flash(f"{message}", "error")
+        return redirect('/calendar')
 
-    #g.db.insert_availability(availability)
-    flash("Availability submitted", "succcess")
+    # Insert the availability into the local database for each day of the week
+    
+    if g.db.insert_availability(converted_input):
+        flash("Availability submitted", "succcess")
+    else:
+        flash("Availability insertion failed, probably due to format", "error")
+        return redirect('/calendar')
     return redirect('/calendar')
 
 @app.errorhandler(404)
