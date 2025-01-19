@@ -3,16 +3,28 @@ import secrets
 from booking import database # This is the database persistance module, all interactions with google calendar API module should take place here
 from booking import error_utils
 from booking import booking_utils as util
+from functools import wraps
 
 def create_app():
     app = Flask(__name__)
     app.secret_key = secrets.token_hex(32)
-    with app.app_context():
-        g.db = database.DatabasePersistence()
     return app
 
 app = create_app()
-print(g.__dict__)
+
+# This is an issue right now becuase it's executing multiple queries when instantiating before every request. Need to figure out decorator.
+@app.before_request
+def instantiate_database():
+    g.db = database.DatabasePersistence()
+
+# Use decorator to create g.db instance within request context window for functions that require it to conserve resources
+# def instantiate_database(f):
+#     @wraps(f)
+#     def decorated_function(*args, **kwargs):
+#         with app.app_context():
+#             g.db = database.DatabasePersistence()
+#         return f(*args, **kwargs)
+#     return decorated_function
 
 # Create a custom decorator to iniitialize the db class in globabl g for prior to running the functions that neeed them.
 
@@ -44,6 +56,7 @@ def get_calendar():
     return render_template('calendar.html', days_of_week=days_of_week)
 
 @app.route("/calendar", methods=["POST"])
+# @instantiate_database
 def submit_availability():
     availability = request.form
     # Need to check / sanitize input here, create util function

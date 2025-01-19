@@ -72,10 +72,12 @@ class DatabasePersistence:
                     # Use a try-catch to return false if any of the availability inserts fail so not to interrup user session
                     try:
                         cursor.execute(query, (begin_period, end_period, self._days_of_week_ids.get(f"{day}")))
-                    except psycopg2.DatabaseError:
+                    except psycopg2.DatabaseError as e:
+                        logger.info("Insertion failed with error: %s", e.args)
                         return False
         return True
-            
+
+    # Need to run testing to ensure database created from this matches local environment
     def _setup_schema(self):
         """
         Internal function to set-up the database schema if the tables do not exist. Primarily used when being deployed in production.
@@ -88,6 +90,7 @@ class DatabasePersistence:
                     WHERE table_schema = 'public' AND table_name = 'availability_day';
                 """)
                 if cursor.fetchone()[0] == 0:
+                    logger.info("Setting up the schema.")
                     cursor.execute("""
                         CREATE TABLE availability_day (
                         id serial PRIMARY KEY,
@@ -114,7 +117,8 @@ class DatabasePersistence:
                                 begin_period timestamp with time zone NOT NULL,
                                 end_period timestamp with time zone NOT NULL,
                                 availability_day_id integer NOT NULL REFERENCES availability_day (id),
-                                is_booked boolean DEFAULT false
+                                is_booked boolean DEFAULT false,
+                                CHECK unique_id_begin_end UNIQUE (id, begin_period, end_period)
                                 );""")
                 cursor.execute("""
                     SELECT COUNT(*)
