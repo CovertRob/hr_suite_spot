@@ -117,8 +117,7 @@ class DatabasePersistence:
                                 begin_period timestamp with time zone NOT NULL,
                                 end_period timestamp with time zone NOT NULL,
                                 availability_day_id integer NOT NULL REFERENCES availability_day (id),
-                                is_booked boolean DEFAULT false,
-                                CHECK unique_id_begin_end UNIQUE (id, begin_period, end_period)
+                                is_booked boolean DEFAULT false
                                 );""")
                 cursor.execute("""
                     SELECT COUNT(*)
