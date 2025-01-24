@@ -24,7 +24,7 @@ def validate_availability_input_format(input: MultiDict) -> bool:
 
     Pattern matching done with REGEX.
     """
-    pattern = re.compile('^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])\s([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$')
+    pattern = re.compile('^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])\s([01]\d|2[0-3]):([0-5]\d):([0-5]\d)$') # Pattern match for full ISO format without timezone
 
     # Should be two values for each key
     for value in input.values():
@@ -74,6 +74,11 @@ def convert_to_iso_with_tz(input: MultiDict) -> dict:
         now = datetime.now(tz=tz) # Set timezone for now to ensure stable deployment in prod environment
         if start < now or end < now: raise TimeValidationError(message="Time cannot be in past") # Remember to pass off message in front end
         if end <= start: raise TimeValidationError(message="End of time period cannot be less than or equal to the start")
+        # Perform month and day range checks
+        # Do not assume amount people can book into future to keep flexibility in appication open
+        month_set = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}
+        if start.month not in month_set: raise TimeValidationError(message="Not a valid month")
+        if end.month not in month_set: raise TimeValidationError(message="Not a valid month")
 
         start_iso = start.isoformat()
         end_iso = end.isoformat()

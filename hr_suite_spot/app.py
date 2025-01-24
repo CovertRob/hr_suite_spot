@@ -76,7 +76,7 @@ def submit_availability():
         return redirect('/calendar')
 
     # Insert the availability into the local database for each day of the week
-    
+    # If fails, logs database error and returns false
     if g.db.insert_availability(converted_input):
         flash("Availability submitted", "succcess")
     else:
