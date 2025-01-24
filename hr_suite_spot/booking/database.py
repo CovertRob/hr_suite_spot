@@ -62,16 +62,18 @@ class DatabasePersistence:
 
         Returns True if insert successful, false otherwise
         """
+
+        # To-do: Database needs to overwrite availability for a given day of the week when data is resubmitted by user
         
         # Define query to insert parameters
-        query = "INSERT INTO availability_period (begin_period, end_period, availability_day_id) VALUES (%s, %s, %s)"
+        query = "SELECT input_or_replace_availability(%s, %s, %s)"
         with self._database_connect() as conn:
             with conn.cursor() as cursor:
                 for day, period in availability.items():
                     begin_period, end_period = period
                     # Use a try-catch to return false if any of the availability inserts fail so not to interrup user session
                     try:
-                        cursor.execute(query, (begin_period, end_period, self._days_of_week_ids.get(f"{day}")))
+                        cursor.execute(query, (begin_period, end_period, self._days_of_week_ids.get(f"{day}"))) # Future - remove n +1 query
                     except psycopg2.DatabaseError as e:
                         logger.info("Insertion failed with error: %s", e.args)
                         return False
@@ -130,6 +132,43 @@ class DatabasePersistence:
                                    id serial PRIMARY KEY,
                                    availability_period_id integer NOT NULL REFERENCES availability_period (id));
                                    """)
+                self._setup_availability_period_function(cursor)
+
+    def _setup_availability_period_function(self, cursor):
+        """set up the function to run in the database that will check if availability periods exist for a given day of the week or not and if they do it will delete and overwrite the data when user resubmits new data
+        """
+        check_function_query = """
+                                SELECT EXISTS (
+                                SELECT 1
+                                FROM pg_proc
+                                JOIN pg_namespace ON pg_proc.pronamespace = pg_namespace.oid
+                                WHERE proname = %s AND nspname = %s);
+                                """
+        function_name = 'input_or_replace_availability'
+        schema_name = 'public'
+        # Check if the function exists within the database
+        cursor.execute(check_function_query, (function_name, schema_name))
+        function_exists = cursor.fetchone()[0]
+
+        # If the function doesn't exist, create it
+        # Build function to only handle one availability period at a time based on system design. Can re-factor to loop through entire availability in future
+        if not function_exists:
+            create_function_query = """
+                CREATE FUNCTION input_or_replace_availability(
+                    start_period timestamp with time zone,
+                    finish_period timestamp with time zone,
+                    day_of_week_id integer)
+                    RETURNS VOID AS $$
+                    BEGIN
+                        -- Delete existing availability
+                        DELETE FROM availability_period
+                        WHERE availability_day_id = day_of_week_id;
+                        -- Insert the new availability
+                        INSERT INTO availability_period (begin_period, end_period, availability_day_id) VALUES (start_period, finish_period, day_of_week_id);
+                    END;
+                    $$ LANGUAGE plpgsql;
+                                    """
+            cursor.execute(create_function_query)
 
 # For testing:
 
