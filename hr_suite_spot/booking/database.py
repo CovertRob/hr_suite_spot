@@ -3,6 +3,7 @@ from psycopg2.extras import DictCursor
 from contextlib import contextmanager
 import logging
 import os
+from pprint import pprint
 
 LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
 logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
@@ -46,14 +47,6 @@ class DatabasePersistence:
         ids_to_dict = {pair['day_of_week']: pair['id'] for pair in ids}
         return ids_to_dict
 
-    def find_todos_for_list(self, list_id):
-        query = "SELECT * FROM todos WHERE list_id = %s"
-        logger.info("Executing query: %s with list_id: %s", query, list_id)
-        with self._database_connect() as conn:
-            with conn.cursor(cursor_factory=DictCursor) as cursor:
-                cursor.execute(query, (list_id,))
-                return cursor.fetchall()
-
     def insert_availability(self, availability: dict):
         """
         Inserts the availability given for each day of the week into the local database for storage and display for appointment booking.
@@ -78,6 +71,24 @@ class DatabasePersistence:
                         logger.info("Insertion failed with error: %s", e.args)
                         return False
         return True
+    
+    def retrieve_availability_periods(self):
+        """
+        Gets the stored availability periods that user input. 
+        Availability periods are then used to generate booking slots.
+
+        Returns raw table data.
+        """
+        query = 'SELECT day_of_week, begin_period AS start, end_period AS end FROM availability_period JOIN availability_day ON availability_day_id = availability_day.id GROUP BY availability_day_id, day_of_week, begin_period, end_period ORDER BY availability_day_id'
+        logger.info("Executing query: %s", query)
+        with self._database_connect() as conn:
+            with conn.cursor(cursor_factory=DictCursor) as cursor:
+                cursor.execute(query)
+                availability_data = cursor.fetchone()
+                start = availability_data['start']
+                
+                pprint(start.isoformat())
+        return availability_data
 
     # Need to run testing to ensure database created from this matches local environment
     def _setup_schema(self):
@@ -174,3 +185,4 @@ class DatabasePersistence:
 
 if __name__ == "__main__":
     test = DatabasePersistence()
+    test.retrieve_availability_periods()

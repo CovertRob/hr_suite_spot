@@ -34,7 +34,7 @@ def index():
     title = "HR Suite Spot"
     return render_template('index_2.html', title = title)
 
-# Description page about Jasmin
+# Description page about User
 @app.route("/about")
 def get_about():
     return render_template('about.html')
@@ -50,13 +50,16 @@ def get_services():
 def get_contact():
     return render_template('contact.html')
 
+
+# Admin page for user to submit their availability to the system for appointments to be booked against.
+# Future - add authentication protection to route
 @app.route("/calendar", methods=['GET'])
 def get_calendar():
     days_of_week = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
     return render_template('calendar.html', days_of_week=days_of_week)
 
 @app.route("/calendar", methods=["POST"])
-# @instantiate_database
+# @instantiate_database currently throwing out of context error
 def submit_availability():
     availability = request.form
     # Need to check / sanitize input here, create util function

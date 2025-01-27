@@ -2,11 +2,8 @@
 # Import MultiDict for form input handling
 from werkzeug.datastructures import MultiDict
 import re
-from datetime import datetime, tzinfo, timezone, timedelta
+from datetime import datetime, timezone, timedelta
 from .error_utils import TimeValidationError
-
-
-
 
 def validate_availability_input_format(input: MultiDict) -> bool:
     """Fomat IAF:
@@ -90,6 +87,12 @@ def convert_to_iso_with_tz(input: MultiDict) -> dict:
         # Use final ISO-formatted with timezone as return values for JSON API pass
         availability_in_iso[key] = [start_iso, end_iso]
     return availability_in_iso
+
+def generate_booking_slots(self):
+    pass
+    # perform query on availability_period in database to retrieve open time slots for each day of the week
+    # Iterate over the time slots, segmenting them into 30 minute time slots and store them in a dictionary to the assocciated day of the week
+    # Return dictionary containing segmented booking slots
 
 
 
