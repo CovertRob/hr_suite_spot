@@ -77,17 +77,14 @@ class DatabasePersistence:
         Gets the stored availability periods that user input. 
         Availability periods are then used to generate booking slots.
 
-        Returns raw table data.
+        Returns raw table data in DictRow format.
         """
         query = 'SELECT day_of_week, begin_period AS start, end_period AS end FROM availability_period JOIN availability_day ON availability_day_id = availability_day.id GROUP BY availability_day_id, day_of_week, begin_period, end_period ORDER BY availability_day_id'
         logger.info("Executing query: %s", query)
         with self._database_connect() as conn:
             with conn.cursor(cursor_factory=DictCursor) as cursor:
                 cursor.execute(query)
-                availability_data = cursor.fetchone()
-                start = availability_data['start']
-                
-                pprint(start.isoformat())
+                availability_data = cursor.fetchall()
         return availability_data
 
     # Need to run testing to ensure database created from this matches local environment

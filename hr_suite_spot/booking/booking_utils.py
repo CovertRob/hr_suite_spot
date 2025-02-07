@@ -4,6 +4,7 @@ from werkzeug.datastructures import MultiDict
 import re
 from datetime import datetime, timezone, timedelta
 from .error_utils import TimeValidationError
+from booking import database
 
 def validate_availability_input_format(input: MultiDict) -> bool:
     """Fomat IAF:
@@ -88,11 +89,22 @@ def convert_to_iso_with_tz(input: MultiDict) -> dict:
         availability_in_iso[key] = [start_iso, end_iso]
     return availability_in_iso
 
-def generate_booking_slots(self):
-    pass
+def generate_booking_slots():
+    db = database.DatabasePersistence()
     # perform query on availability_period in database to retrieve open time slots for each day of the week
+    time_periods = db.retrieve_availability_periods()
+    time_periods_in_iso = map(_map_to_iso, time_periods)
+    print(list(time_periods_in_iso))
     # Iterate over the time slots, segmenting them into 30 minute time slots and store them in a dictionary to the assocciated day of the week
     # Return dictionary containing segmented booking slots
+
+def _map_to_iso(availability_period_record):
+    temp_dict = {}
+    day_of_week = availability_period_record['day_of_week']
+    start = availability_period_record['start']
+    end = availability_period_record['end']
+    temp_dict[day_of_week] = [start.isoformat(), end.isoformat()]
+    return temp_dict
 
 
 

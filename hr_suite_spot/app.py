@@ -93,4 +93,6 @@ def error_handler(error):
     return redirect("/")
 
 if __name__ == '__main__':
+    util.generate_booking_slots()
     app.run(debug=True, port=5003)
+    
