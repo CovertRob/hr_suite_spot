@@ -89,10 +89,10 @@ def submit_availability():
 
 @app.errorhandler(404)
 def error_handler(error):
-    flash(f"{error}", "error")
+    flash(f"{error}", "An error occurred.")
     return redirect("/")
 
 if __name__ == '__main__':
-    util.generate_booking_slots()
+    # util.generate_booking_slots()
     app.run(debug=True, port=5003)
     

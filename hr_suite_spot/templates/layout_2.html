@@ -29,7 +29,7 @@
             <div class="cs-ul-wrapper">
                 <ul id="cs-expanded" class="cs-ul" aria-expanded="false">
                     <li class="cs-li">
-                        <a href="/" class="cs-li-link"> <!--Remove cs-active-->
+                        <a href="/" class="cs-li-link">
                             Home
                         </a>
                     </li>
@@ -71,5 +71,6 @@
     <!-- Filled in by the `content` block from another template file -->
     {% endblock %}
 </main>
+<script src="{{ url_for('static', filename='javascript/interactions.js') }}"></script>
 </body>
 </html>
