@@ -3,7 +3,6 @@ from psycopg2.extras import DictCursor
 from contextlib import contextmanager
 import logging
 import os
-from pprint import pprint
 
 LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
 logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
