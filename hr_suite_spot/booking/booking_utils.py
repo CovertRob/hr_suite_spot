@@ -94,7 +94,6 @@ def generate_booking_slots():
     # perform query on availability_period in database to retrieve open time slots for each day of the week
     time_periods = db.retrieve_availability_periods()
     time_periods_in_iso = map(_map_to_iso, time_periods)
-    print(list(time_periods_in_iso))
     # Iterate over the time slots, segmenting them into 30 minute time slots and store them in a dictionary to the assocciated day of the week
     # Return dictionary containing segmented booking slots
 
