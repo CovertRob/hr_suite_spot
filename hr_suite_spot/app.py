@@ -12,21 +12,13 @@ def create_app():
 
 app = create_app()
 
-# This is an issue right now becuase it's executing multiple queries when instantiating before every request. Need to figure out decorator.
-@app.before_request
-def instantiate_database():
-    g.db = database.DatabasePersistence()
-
 # Use decorator to create g.db instance within request context window for functions that require it to conserve resources
-# def instantiate_database(f):
-#     @wraps(f)
-#     def decorated_function(*args, **kwargs):
-#         with app.app_context():
-#             g.db = database.DatabasePersistence()
-#         return f(*args, **kwargs)
-#     return decorated_function
-
-# Create a custom decorator to iniitialize the db class in globabl g for prior to running the functions that neeed them.
+def instantiate_database(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        g.db = database.DatabasePersistence()
+        return f(*args, **kwargs)
+    return decorated_function
 
 # Landing page
 @app.route("/")
@@ -58,8 +50,9 @@ def get_calendar():
     days_of_week = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
     return render_template('calendar.html', days_of_week=days_of_week)
 
+# This route only to be used by admin
 @app.route("/calendar", methods=["POST"])
-# @instantiate_database currently throwing out of context error
+@instantiate_database
 def submit_availability():
     availability = request.form
     # Need to check / sanitize input here, create util function
@@ -89,7 +82,7 @@ def submit_availability():
 
 @app.errorhandler(404)
 def error_handler(error):
-    flash(f"{error}", "An error occurred.")
+    flash(f"An error occurred.", "error")
     return redirect("/")
 
 if __name__ == '__main__':
