@@ -18,7 +18,7 @@ def validate_availability_input_format(input: MultiDict) -> bool:
 
     Sanitize input.
 
-    In past time checks done in other util, this is only for format.
+    Time checks done in other util, this is only for format.
 
     Pattern matching done with REGEX.
     """
@@ -38,17 +38,20 @@ def validate_availability_input_format(input: MultiDict) -> bool:
             return False
     return True
 
-def convert_to_iso_with_tz(input: MultiDict) -> dict:
+def convert_to_iso_with_tz(input: MultiDict) -> MultiDict:
     """
-    Convert's the availability input into ISO-format in UTC and returns it as a regular dictionary to be used for Jsonify. 
+    Takes the input of availability period data already in ISO format and performs time and date validation checks and then adds in timezone info.
     Performs all non-format time validations.
 
-    Input of availability assumed to be in PST
+    Input of availability assumed to be in PST. Current implementation is hard coded for -8 UTC.
 
     Raises:
         TimeValidationError: If validation parameters not met. See TimeValidationError docs.
 
+    Note: ISO format for time states including the 'T' to separate the date and time is optional. User input does not include the T. Output will include the T due to functionality of Python datetime module isoformat() function outputs.
+
     Output format:
+        Note: for re-occurring times there will be multiple pairs, thus the MultiDict return type.
     {'Monday': ['2025-02-01T01:01:00-08:00', '2025-02-03T01:01:00-08:00']}
     """
     availability_in_iso = MultiDict()
@@ -96,7 +99,28 @@ def convert_to_iso_with_tz(input: MultiDict) -> dict:
             availability_in_iso.add(key, [start_iso, end_iso])
     return availability_in_iso
 
-def generate_availability(day_of_week_availability: MultiDict, reoccurring_data: dict, months: int):
+def generate_availability(day_of_week_availability: MultiDict, reoccurring_data: dict, months: int) -> MultiDict:
+    """
+    Generates the appropriate availability periods based on the user's input for availability periods for each day of the week.
+
+    Availability periods marked as re-occurring based on data from form submission in "reoccurring_data" will have future day-of-week associated dates and time generated and added to the return MultiDict.
+
+    Availability periods not marked as re-occurring will only be added once.
+
+    Input formats:
+        day_of_week_availability: 
+        {'Monday': ['2025-02-01 01:01:00-08:00', '2025-02-03 01:01:00-08:00']}
+        Note this input again does not have the "T" separator.
+
+        reoccurring_data:
+        {'Monday': 'false',
+         'Tuesday': 'true',
+         etc...}
+
+        months: integer representing approximation of months based on multiplication of 30 days internally.
+
+    Returns: MultiDict containing availability periods for all days-of-week that had date/times input. 
+    """
     
     generated_availability = MultiDict()
     for day, period in day_of_week_availability.lists():
@@ -133,7 +157,15 @@ def generate_availability(day_of_week_availability: MultiDict, reoccurring_data:
 
 
 
-def generate_booking_slots(database):
+def generate_booking_slots(database) -> dict:
+    """
+    Generates 30 minutes booking slots based on the availability periods that are in the database.
+    Booking slots to be used by front-end for display.
+
+    Input: database reference for connection.
+
+    Returns: dict containing appointment slots for each day-of-week.
+    """
     # perform query on availability_period in database to retrieve open time slots for each day of the week
     time_periods = database.retrieve_availability_periods()
     #time_periods_in_iso = map(_map_to_iso, time_periods)
@@ -145,7 +177,15 @@ def generate_booking_slots(database):
     return booking_slots
     
 
-def _split_into_30min_segments(begin_time: datetime, end_time: datetime):
+def _split_into_30min_segments(begin_time: datetime, end_time: datetime) -> list:
+    """
+    Helper function that splits a given availability period into appropriate 30 minute segments.
+
+    Input: two datetime objects representing availability period begin and end.
+        Note: Input is datetime not the string iso-format used in other functions due to ease of getting time segments with datetime module.
+
+    Returns: list containing booking slots for given period.
+    """
     end_hours = end_time.time().hour
     end_minutes = end_time.time().minute
     begin_hours = begin_time.time().hour
