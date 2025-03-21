@@ -4,9 +4,9 @@
 :root {
     /* Add these styles to your global stylesheet, which is used across all site pages. You only need to do this once. All elements in the library derive their variables and base styles from this central sheet, simplifying site-wide edits. For instance, if you want to modify how your h2's appear across the site, you just update it once in the global styles, and the changes apply everywhere. */
     --primary: #ff6a3e;
-    --primaryLight: #ffba43;
-    --secondary: #ffba43;
-    --secondaryLight: #ffba43;
+    --primaryLight: #fdfdfd;
+    --secondary: #faf9f7;
+    --secondaryLight: #fbfbfb;
     --headerColor: #1a1a1a;
     --bodyTextColor: #1a1a1a;
     --bodyTextColorWhite: #fafbfc;
@@ -68,7 +68,7 @@ body {
       padding: var(--sectionPadding);
       /* 160px - 200px */
       padding-top: clamp(10rem, 20vw, 12.5rem);
-      background-color: #1D86CC;
+      background-color: #f8f7f6;
       overflow: hidden;
       position: relative;
       z-index: 1;
@@ -134,7 +134,7 @@ body {
       color: #fff;
     }
     #hero-1946 .cs-picture {
-      width: 100%;
+      width: 75%;
       /* 280px - 510px */
       height: clamp(17.5rem, 58.6vw, 31.875rem);
       /* 16px - 20px */
@@ -145,8 +145,8 @@ body {
     #hero-1946 .cs-picture img {
       width: 100%;
       height: 100%;
-      object-fit: cover;
-      border-radius: 2.5rem;
+      object-fit: contain;
+      
       position: absolute;
     }
     #hero-1946 .cs-card-group {
@@ -276,6 +276,14 @@ body {
 
   input{
     width:15rem
+  }
+
+  .title-clamp {
+    width: 100%;
+    display: inline-flex;
+    background-color: rgb(242, 158, 68, 60%);
+    padding: 0;
+    margin: 0;
   }
 
   .flash {

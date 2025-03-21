@@ -3,6 +3,7 @@ from psycopg2.extras import DictCursor
 from contextlib import contextmanager
 import logging
 import os
+from werkzeug.datastructures import MultiDict
 
 LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
 logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
@@ -46,7 +47,7 @@ class DatabasePersistence:
         ids_to_dict = {pair['day_of_week']: pair['id'] for pair in ids}
         return ids_to_dict
 
-    def insert_availability(self, availability: dict):
+    def insert_availability(self, availability: MultiDict):
         """
         Inserts the availability given for each day of the week into the local database for storage and display for appointment booking.
 
@@ -59,9 +60,10 @@ class DatabasePersistence:
         
         # Define query to insert parameters
         query = "SELECT input_or_replace_availability(%s, %s, %s)"
+        logger.info("Executing query: %s", query)
         with self._database_connect() as conn:
             with conn.cursor() as cursor:
-                for day, period in availability.items():
+                for day, period in availability.items(multi=True):
                     begin_period, end_period = period
                     # Use a try-catch to return false if any of the availability inserts fail so not to interrup user session
                     try:
@@ -169,7 +171,8 @@ class DatabasePersistence:
                     BEGIN
                         -- Delete existing availability
                         DELETE FROM availability_period
-                        WHERE availability_day_id = day_of_week_id;
+                        WHERE availability_day_id = day_of_week_id
+                        AND DATE(begin_period) = DATE(start_period);
                         -- Insert the new availability
                         INSERT INTO availability_period (begin_period, end_period, availability_day_id) VALUES (start_period, finish_period, day_of_week_id);
                     END;

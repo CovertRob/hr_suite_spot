@@ -1,5 +1,8 @@
 # Custom exceptions to be used throughout the project.
 
+from email import message
+
+
 class TimeValidationError(Exception):
     """
     To be raised when an error in converting the time inputs to ISO format is encountered. 
@@ -10,5 +13,6 @@ class TimeValidationError(Exception):
         4. The input day range for given month does not meet valid range
     """
     # By default Exception class takes a tuple of arguments
-    def __init__(self, *args):
+    def __init__(self, message, *args):
         super().__init__(*args)
+        self.message = message

@@ -1,11 +1,25 @@
-<form>
-    <label for="appointment">Monday:</label>
-    <input 
-      type="datetime-local" 
-      id="appointment" 
-      name="appointment" 
-      required 
-      min="2025-01-01T00:00" 
-      max="2025-12-31T23:59">
-    <button type="submit">Submit</button>
-  </form>
+{% extends 'layout_2.html' %}
+{% block content %}
+<section id="sbs-2180">
+<!-- Include Flatpickr CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
+<!-- Include Flatpickr JS -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<input type="text" id="appointment-picker" placeholder="Select an appointment">
+<script>
+  flatpickr("#appointment-picker", {
+      enableTime: true,  // Allow time selection
+      dateFormat: "Y-m-d H:i",  // Format: YYYY-MM-DD HH:MM
+      minDate: "today",  // Prevent past dates
+      enable: [
+          "2025-03-20 09:00",
+          "2025-03-20 09:30",
+          "2025-03-20 10:00"
+          // Add dynamically generated slots
+      ]
+  });
+</script>
+
+</section>
+{% endblock %}
