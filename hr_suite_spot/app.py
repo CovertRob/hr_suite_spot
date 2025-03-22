@@ -24,6 +24,10 @@ def instantiate_database(f):
         return f(*args, **kwargs)
     return decorated_function
 
+@app.route('/')
+def home():
+    return redirect('/index')
+
 # Landing page
 @app.route("/index")
 def index():
@@ -103,13 +107,20 @@ def clear_date_availability(date):
 
 @app.route("/booking/coaching", methods=["GET"])
 @instantiate_database
-def book_coaching_call():
-    pass
+def pick_coaching_call():
     # Get availability periods from database
     appointments = util.generate_booking_slots(g.db)
+    # Remove the T for easier management on front-end
     appointments_in_iso = [slot.isoformat().replace('T', ' ') for day in appointments for slot in day]
     appointments_json = json.dumps(appointments_in_iso)
     return render_template('booking.html', appointments=appointments_json)
+
+@app.route("/coaching/submit-appointment", methods=["POST"])
+@instantiate_database
+def book_coaching_call():
+    pprint(request.form)
+    flash("Appointment booked", "success")
+    return redirect("/booking/coaching")
 
 @app.errorhandler(404)
 def error_handler(error):
