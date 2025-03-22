@@ -1,25 +1,26 @@
 {% extends 'layout_2.html' %}
 {% block content %}
 <section id="sbs-2180">
-<!-- Include Flatpickr CSS -->
+  <div class="cs-container">
+    <div class="transition-piece">
+
+<form id="appointment-form" method="POST" action="/submit-appointment">
+  <input type="hidden" id="selected-datetime" name="appointment_datetime">
+  
+  <!-- Use a data attribute to pass the appointments data -->
+  <input type="text" id="appointment-picker" data-appointments='{{ appointments|safe }}' placeholder="Select appointment date">
+  
+  <div id="validation-message" style="color: red; display: none;">Please select a valid appointment time.</div>
+  <button type="submit" id="submit-button">Book Appointment</button>
+</form>
+
+<!-- Include flatpickr CSS and JS -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-
-<!-- Include Flatpickr JS -->
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-<input type="text" id="appointment-picker" placeholder="Select an appointment">
-<script>
-  flatpickr("#appointment-picker", {
-      enableTime: true,  // Allow time selection
-      dateFormat: "Y-m-d H:i",  // Format: YYYY-MM-DD HH:MM
-      minDate: "today",  // Prevent past dates
-      enable: [
-          "2025-03-20 09:00",
-          "2025-03-20 09:30",
-          "2025-03-20 10:00"
-          // Add dynamically generated slots
-      ]
-  });
-</script>
 
+<!-- Include your custom script -->
+<script src="{{ url_for('static', filename='javascript/appointment_picker.js') }}"></script>
+    </div>
+  </div>
 </section>
 {% endblock %}

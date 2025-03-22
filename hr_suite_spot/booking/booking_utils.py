@@ -141,8 +141,8 @@ def generate_availability(day_of_week_availability: MultiDict, reoccurring_data:
         day_of_week = begin_date.weekday()
         # Generate the proper repeating elements
         # Define the start and end time of availability
-        start_time = datetime.strptime("08:00:00", "%H:%M:%S").time()
-        end_time = datetime.strptime("10:00:00", "%H:%M:%S").time()
+        start_time = begin_date.time()
+        end_time = datetime.fromisoformat(period[1]).time()
 
         repeating_periods = [
             [datetime.combine(d, start_time).isoformat(), datetime.combine(d, end_time).isoformat()]
@@ -168,12 +168,14 @@ def generate_booking_slots(database) -> dict:
     """
     # perform query on availability_period in database to retrieve open time slots for each day of the week
     time_periods = database.retrieve_availability_periods()
+    #pprint(time_periods)
     #time_periods_in_iso = map(_map_to_iso, time_periods)
     # Iterate over the time slots, segmenting them into 30 minute time slots and store them in a dictionary to the assocciated day of the week
     # Return dictionary containing segmented booking slots
-    booking_slots = {}
-    for day_of_week in time_periods:
-        booking_slots[day_of_week[0]] = _split_into_30min_segments(day_of_week[1], day_of_week[2])
+    booking_slots = []
+
+    for period in time_periods:
+        booking_slots.append(_split_into_30min_segments(period['start'], period['end']))
     return booking_slots
     
 
@@ -192,6 +194,9 @@ def _split_into_30min_segments(begin_time: datetime, end_time: datetime) -> list
     begin_minutes = begin_time.time().minute
     
     time_slots = []
+    # Include bottom of the hour if 0 minutes
+    if begin_minutes == 0:
+        time_slots.append(datetime(begin_time.year, begin_time.month, begin_time.day, begin_hours, 0))
     # 30 minute time slot starts from time generated
     # Only include minutes start if under 30 minutes
     # If minutes is above '30', go to next availale hour since meetings are a minimum of 30 minute slots

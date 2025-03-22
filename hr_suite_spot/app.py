@@ -7,6 +7,7 @@ from booking import booking_utils as util
 from functools import wraps
 from pprint import pprint
 from werkzeug.datastructures import MultiDict
+import json
 
 def create_app():
     app = Flask(__name__)
@@ -76,7 +77,7 @@ def submit_availability():
     
     # Generate availability periods, reoccurring for those marked
     generated_availability = util.generate_availability(availability_data, reoccurring_data, 2)
-    
+    pprint(generated_availability)
     # Convert to official ISO-format and verify no inputs in past
     # Use try-catch block with convert_to_iso_with_tz
     try:
@@ -87,6 +88,7 @@ def submit_availability():
         return redirect('/calendar')
     # Insert the availability into the local database for each day of the week
     # If fails, logs database error and returns false
+    
     if g.db.insert_availability(converted_input):
         flash("Availability submitted", "success")
     else:
@@ -104,8 +106,10 @@ def clear_date_availability(date):
 def book_coaching_call():
     pass
     # Get availability periods from database
-    util.generate_booking_slots()
-    return render_template('booking.html')
+    appointments = util.generate_booking_slots(g.db)
+    appointments_in_iso = [slot.isoformat().replace('T', ' ') for day in appointments for slot in day]
+    appointments_json = json.dumps(appointments_in_iso)
+    return render_template('booking.html', appointments=appointments_json)
 
 @app.errorhandler(404)
 def error_handler(error):
