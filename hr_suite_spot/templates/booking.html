@@ -2,31 +2,36 @@
 {% block content %}
 <section id="sbs-2180">
   <div class="cs-container">
-    <div class="transition-piece">
+    <div class="transition-piece booking_calendar">
 
-<form id="appointment-form" method="POST" action="/submit-appointment">
-  <input type="hidden" id="selected-datetime" name="appointment_datetime">
-  
-  <!-- Use a data attribute to pass the appointments data -->
-  <input type="text" id="appointment-picker" data-appointments='{{ appointments|safe }}' placeholder="Select appointment date">
-  
-  <div id="validation-message" style="color: red; display: none;">Please select a valid appointment time.</div>
-  <button type="submit" id="submit-button">Book Appointment</button>
-</form>
+      <form id="appointment-form" method="POST" action="/coaching/submit-appointment">
+        <input type="hidden" id="selected-datetime" name="appointment_datetime">
+        <label> Enter Name:
+          <input type="text" id="booking_name" name="booking_name" placeholder="First Last" required>
+        </label>
+        <label> Email:
+          <input type="text" id="booking_email" name="booking_email" placeholder="first.last@gmail.com" required>
+        </label>
+        <!-- Use a data attribute to pass the appointments data -->
+        <input type="text" id="appointment-picker" data-appointments='{{ appointments|safe }}' placeholder="Select appointment date">
+        
+        <div id="validation-message" style="color: red; display: none;">Please select a valid appointment time.</div>
+        <button type="submit" id="submit-button">Book Appointment</button>
+      </form>
 
-<!-- Add this where you want to display the timezone information -->
-<div id="timezone-info" class="timezone-display"></div>
+      <!-- Add this where you want to display the timezone information -->
+      <div id="timezone-info" class="timezone-display"></div>
 
-<!-- Include flatpickr CSS and JS -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+      <!-- Include flatpickr CSS and JS -->
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+      <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
-<!-- Scripts needed for timezone management -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.34/moment-timezone-with-data.min.js"></script>
+      <!-- Scripts needed for timezone management -->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.34/moment-timezone-with-data.min.js"></script>
 
-<!-- Custom script using flatpickr and timezone management -->
-<script src="{{ url_for('static', filename='javascript/appointment_picker.js') }}"></script>
+      <!-- Custom script using flatpickr and timezone management -->
+      <script src="{{ url_for('static', filename='javascript/appointment_picker.js') }}"></script>
     </div>
   </div>
 </section>
