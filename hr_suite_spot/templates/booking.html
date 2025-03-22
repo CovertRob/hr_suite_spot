@@ -14,11 +14,18 @@
   <button type="submit" id="submit-button">Book Appointment</button>
 </form>
 
+<!-- Add this where you want to display the timezone information -->
+<div id="timezone-info" class="timezone-display"></div>
+
 <!-- Include flatpickr CSS and JS -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
-<!-- Include your custom script -->
+<!-- Scripts needed for timezone management -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.34/moment-timezone-with-data.min.js"></script>
+
+<!-- Custom script using flatpickr and timezone management -->
 <script src="{{ url_for('static', filename='javascript/appointment_picker.js') }}"></script>
     </div>
   </div>

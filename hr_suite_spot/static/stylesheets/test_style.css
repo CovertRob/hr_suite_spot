@@ -190,6 +190,14 @@
       color: #33cc99;
       background: #CBF2E5;
     }
+
+    .timezone-display {
+      position: relative;
+      margin: 10px 0;
+      font-size: 0.9em;
+      color: #666;
+      font-style: italic;
+  }
   }
   /* Tablet - 768px */
   @media only screen and (min-width: 48rem) {

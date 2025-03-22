@@ -84,6 +84,8 @@ class DatabasePersistence:
         logger.info("Executing query: %s", query)
         with self._database_connect() as conn:
             with conn.cursor(cursor_factory=DictCursor) as cursor:
+                # Must set time zone here for each connection
+                cursor.execute("SET TIME ZONE 'UTC';")
                 cursor.execute(query)
                 availability_data = cursor.fetchall()
         return availability_data
@@ -142,6 +144,8 @@ class DatabasePersistence:
                                    availability_period_id integer NOT NULL REFERENCES availability_period (id));
                                    """)
                 self._setup_availability_period_function(cursor)
+                # Set as UTC so we retrieve data in UTC for conversion on front-end
+                cursor.execute("SET TIME ZONE 'UTC';")
 
     def _setup_availability_period_function(self, cursor):
         """set up the function to run in the database that will check if availability periods exist for a given day of the week or not and if they do it will delete and overwrite the data when user resubmits new data
