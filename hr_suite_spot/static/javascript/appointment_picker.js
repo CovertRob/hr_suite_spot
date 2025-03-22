@@ -102,8 +102,6 @@ document.addEventListener('DOMContentLoaded', function() {
                   
                   // Show the time dropdown
                   timeSelect.style.display = 'block';
-                  timeSelect.style.position = 'relative';
-                  timeSelect.style.left = '45%';
               } else {
                   // Hide the time dropdown if no date is selected
                   timeSelect.style.display = 'none';
@@ -122,7 +120,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Add form submission validation
   document.getElementById("appointment-form").addEventListener("submit", function(event) {
       const selectedDateTime = document.getElementById("selected-datetime").value;
-      const convertedToUTC = moment.tz(selectedDateTime, userTimezone).utc().format('YYYY-MM-DD HH:mm');
+      const convertedToUTC = moment.tz(selectedDateTime, 'YYYY-MM-DD HH:mm', userTimezone).utc().format('YYYY-MM-DD HH:mm:ss');
       
       if (!availableTimesUTC.includes(convertedToUTC)) {
           event.preventDefault();
@@ -137,6 +135,7 @@ document.addEventListener('DOMContentLoaded', function() {
       utcDateTimeInput.value = convertedToUTC;
       this.appendChild(utcDateTimeInput);
   });
+
   function displayTimezoneInfo(timezone) {
     const timezoneInfo = document.getElementById('timezone-info');
     if (timezoneInfo) {
