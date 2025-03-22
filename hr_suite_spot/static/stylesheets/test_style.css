@@ -198,6 +198,13 @@
       color: #666;
       font-style: italic;
   }
+
+    .transition-piece.booking_calendar #appointment-form {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      color:#000
+  }
   }
   /* Tablet - 768px */
   @media only screen and (min-width: 48rem) {
