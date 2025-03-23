@@ -6,7 +6,7 @@ from uuid import uuid4
 from pprint import pprint
 
 # Path to your Service Account JSON key
-SERVICE_ACCOUNT_FILE = Path("./hr_suite_spot/booking/hr-suite-spot-8164bd363e86.json")
+SERVICE_ACCOUNT_FILE = Path("./booking/hr-suite-spot-8164bd363e86.json")
 
 # The email of the business user you are impersonating
 BUSINESS_EMAIL = "jasmin.scalli@hrsuitespot.com"

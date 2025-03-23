@@ -8,7 +8,7 @@ from functools import wraps
 from pprint import pprint
 from werkzeug.datastructures import MultiDict
 import json
-from booking import event_planner as ep
+from booking import booking_service
 
 def create_app():
     app = Flask(__name__)
@@ -131,13 +131,18 @@ def pick_coaching_call():
 @app.route("/coaching/submit-appointment", methods=["POST"])
 @instantiate_database
 def book_coaching_call():
-    pprint(request.form)
-    flash("Appointment booked", "success")
+    # Google API requires the 'T':
+    start_time = request.form['selected_datetime_utc'].replace(' ', 'T')
+    end_time = (datetime.fromisoformat(start_time) + timedelta(minutes=30)).isoformat()
     # Input form elements:
-    meeting = ep.EventPlanner({"test_guest": "test.guest@gmail.com"}, {"start": "2020-07-31T16:00:00Z",
-    "end": "2020-07-31T16:30:00Z"})
+    meeting = booking_service.BookingService({request.form['booking_name']: request.form['booking_email']}, {"start": f"{start_time}",
+    "end": f"{end_time}"})
     # Display meeting information to user on front-end in addition to email from google:
-    
+        # Add new route for confirmation screen
+    # Display success message if API call was successful
+    flash("Appointment booked", "success")
+    # How to manage and what to do if it isn't successful?
+    pprint(meeting.event_states)
     return redirect("/booking/coaching")
 
 @app.errorhandler(404)
