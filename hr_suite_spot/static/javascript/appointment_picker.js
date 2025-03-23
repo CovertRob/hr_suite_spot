@@ -120,7 +120,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Add form submission validation
   document.getElementById("appointment-form").addEventListener("submit", function(event) {
       const selectedDateTime = document.getElementById("selected-datetime").value;
-      const convertedToUTC = moment.tz(selectedDateTime, 'YYYY-MM-DD HH:mm', userTimezone).utc().format('YYYY-MM-DD HH:mm:ss');
+      const convertedToUTC = moment.tz(selectedDateTime, 'YYYY-MM-DD HH:mm', userTimezone).utc().format('YYYY-MM-DD HH:mm:ssZ');
       
       if (!availableTimesUTC.includes(convertedToUTC)) {
           event.preventDefault();
