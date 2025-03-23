@@ -1,13 +1,14 @@
-from operator import mul
-from flask import Flask, render_template, request, jsonify, flash, redirect, g
+from datetime import timedelta, datetime
+from flask import Flask, render_template, request, flash, redirect, g
 import secrets
-from booking import database # This is the database persistance module, all interactions with google calendar API module should take place here
+from booking import database
 from booking import error_utils
 from booking import booking_utils as util
 from functools import wraps
 from pprint import pprint
 from werkzeug.datastructures import MultiDict
 import json
+from booking import event_planner as ep
 
 def create_app():
     app = Flask(__name__)
@@ -80,9 +81,10 @@ def submit_availability():
         return redirect('/calendar')
     
     # Generate availability periods, reoccurring for those marked
+    # Input here is in MultiDict form, outputs a MultiDict
     generated_availability = util.generate_availability(availability_data, reoccurring_data, 2)
-    pprint(generated_availability)
-    # Convert to official ISO-format and verify no inputs in past
+    
+    # Convert to official ISO-format with timezone info and verify no inputs in past. Currently hard-coded for -8 PST.
     # Use try-catch block with convert_to_iso_with_tz
     try:
         converted_input = util.convert_to_iso_with_tz(generated_availability)
@@ -90,10 +92,21 @@ def submit_availability():
         message = e.message # get the message passed
         flash(f"{message}", "error")
         return redirect('/calendar')
+    
+    # Generate the appointment slots for insertion. Currently hardcoded for 30 minutes.
+    appointments = MultiDict()
+    for day, period in converted_input.items(multi=True):
+        # Note that the _split_into_30min_segments() function returns a list of individual datetimes in 30 minute segments between two datetimes, NOT a begin to end period of two datetime objects by 30 minutes.
+
+        slots_in_30 = util.split_into_30min_segments(datetime.fromisoformat(period[0]), datetime.fromisoformat(period[1]))
+        # Add in the end period for storage in db
+        appointments.add(day, [[slot.isoformat(' '), (slot + timedelta(minutes=30)).isoformat(' ')] for slot in slots_in_30])
+    
     # Insert the availability into the local database for each day of the week
     # If fails, logs database error and returns false
+    #pprint(appointments)
     
-    if g.db.insert_availability(converted_input):
+    if g.db.insert_availability(appointments):
         flash("Availability submitted", "success")
     else:
         flash("Availability insertion failed, probably due to format", "error")
@@ -109,8 +122,8 @@ def clear_date_availability(date):
 @instantiate_database
 def pick_coaching_call():
     # Get availability periods from database
-    appointments = util.generate_booking_slots(g.db)
-    # Remove the T for easier management on front-end
+    appointments = util.get_booking_slots(g.db)
+    # Remove the T for easier management on front-end and convert to ISO str
     appointments_in_iso = [slot.isoformat().replace('T', ' ') for day in appointments for slot in day]
     appointments_json = json.dumps(appointments_in_iso)
     return render_template('booking.html', appointments=appointments_json)
@@ -120,6 +133,11 @@ def pick_coaching_call():
 def book_coaching_call():
     pprint(request.form)
     flash("Appointment booked", "success")
+    # Input form elements:
+    meeting = ep.EventPlanner({"test_guest": "test.guest@gmail.com"}, {"start": "2020-07-31T16:00:00Z",
+    "end": "2020-07-31T16:30:00Z"})
+    # Display meeting information to user on front-end in addition to email from google:
+    
     return redirect("/booking/coaching")
 
 @app.errorhandler(404)

@@ -1,9 +1,11 @@
+import pprint
 import psycopg2
 from psycopg2.extras import DictCursor
 from contextlib import contextmanager
 import logging
 import os
 from werkzeug.datastructures import MultiDict
+from pprint import pprint
 
 LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
 logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
@@ -63,20 +65,20 @@ class DatabasePersistence:
         logger.info("Executing query: %s", query)
         with self._database_connect() as conn:
             with conn.cursor() as cursor:
-                for day, period in availability.items(multi=True):
-                    begin_period, end_period = period
-                    # Use a try-catch to return false if any of the availability inserts fail so not to interrup user session
-                    try:
-                        cursor.execute(query, (begin_period, end_period, self._days_of_week_ids.get(f"{day}"))) # Future - remove n +1 query
-                    except psycopg2.DatabaseError as e:
-                        logger.info("Insertion failed with error: %s", e.args)
-                        return False
+                for day_of_week, appointments in availability.items(multi=True):
+                    for slot in appointments:
+                        begin_period, end_period = slot
+                        # Use a try-catch to return false if any of the availability inserts fail so not to interrup user session
+                        try:
+                            cursor.execute(query, (begin_period, end_period, self._days_of_week_ids.get(f"{day_of_week}"))) # Future - remove n +1 query
+                        except psycopg2.DatabaseError as e:
+                            logger.info("Insertion failed with error: %s", e.args)
+                            return False
         return True
     
     def retrieve_availability_periods(self):
         """
         Gets the stored availability periods that user input. 
-        Availability periods are then used to generate booking slots.
 
         Returns raw table data in DictRow format.
         """
@@ -176,7 +178,9 @@ class DatabasePersistence:
                         -- Delete existing availability
                         DELETE FROM availability_period
                         WHERE availability_day_id = day_of_week_id
-                        AND DATE(begin_period) = DATE(start_period);
+                        -- Delete overlapping time periods
+                        AND begin_period < finish_period
+                        AND end_period > start_period;
                         -- Insert the new availability
                         INSERT INTO availability_period (begin_period, end_period, availability_day_id) VALUES (start_period, finish_period, day_of_week_id);
                     END;

@@ -2,7 +2,7 @@
 # Import MultiDict for form input handling
 from werkzeug.datastructures import MultiDict
 import re
-from datetime import datetime, timezone, timedelta
+from datetime import date, datetime, timezone, timedelta
 from .error_utils import TimeValidationError
 from pprint import pprint
 
@@ -157,14 +157,14 @@ def generate_availability(day_of_week_availability: MultiDict, reoccurring_data:
 
 
 
-def generate_booking_slots(database) -> dict:
+def get_booking_slots(database) -> list[list[datetime]]:
     """
-    Generates 30 minutes booking slots based on the availability periods that are in the database.
     Booking slots to be used by front-end for display.
+    Currently is day-of-week agnostic as it doesn't include that data since front-end doesn't need it for appointment picking.
 
     Input: database reference for connection.
 
-    Returns: dict containing appointment slots for each day-of-week.
+    Returns: dict containing datetime appointment slots.
     """
     # perform query on availability_period in database to retrieve open time slots for each day of the week
     time_periods = database.retrieve_availability_periods()
@@ -173,20 +173,20 @@ def generate_booking_slots(database) -> dict:
     # Iterate over the time slots, segmenting them into 30 minute time slots and store them in a dictionary to the assocciated day of the week
     # Return dictionary containing segmented booking slots
     booking_slots = []
-
+    # Remove the day-of-week info
     for period in time_periods:
-        booking_slots.append(_split_into_30min_segments(period['start'], period['end']))
+        booking_slots.append([period['start'], period['end']])
     return booking_slots
     
 
-def _split_into_30min_segments(begin_time: datetime, end_time: datetime) -> list:
+def split_into_30min_segments(begin_time: datetime, end_time: datetime) -> list[datetime]:
     """
     Helper function that splits a given availability period into appropriate 30 minute segments.
 
     Input: two datetime objects representing availability period begin and end.
         Note: Input is datetime not the string iso-format used in other functions due to ease of getting time segments with datetime module.
 
-    Returns: list containing booking slots for given period.
+    Returns: list containing datetime booking slots for given period.
     """
     end_hours = end_time.time().hour
     end_minutes = end_time.time().minute
