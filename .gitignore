@@ -3,3 +3,4 @@ credentials.json
 token.json
 *.jpg
 bug_log.md
+*.json
