@@ -82,7 +82,7 @@ class DatabasePersistence:
 
         Returns raw table data in DictRow format.
         """
-        query = 'SELECT day_of_week, begin_period AS start, end_period AS end FROM availability_period JOIN availability_day ON availability_day_id = availability_day.id GROUP BY availability_day_id, day_of_week, begin_period, end_period ORDER BY availability_day_id'
+        query = 'SELECT day_of_week, begin_period AS start, end_period AS end FROM availability_period JOIN availability_day ON availability_day_id = availability_day.id WHERE is_booked = FALSE GROUP BY availability_day_id, day_of_week, begin_period, end_period ORDER BY availability_day_id'
         logger.info("Executing query: %s", query)
         with self._database_connect() as conn:
             with conn.cursor(cursor_factory=DictCursor) as cursor:
@@ -91,6 +91,23 @@ class DatabasePersistence:
                 cursor.execute(query)
                 availability_data = cursor.fetchall()
         return availability_data
+
+    def insert_booking(self, start, end):
+        """
+        Marks a booking period in the availability_period table as booked by marking the 'is_booked' column value as True.
+        
+        """
+        query = """UPDATE availability_period SET is_booked = TRUE WHERE begin_period = %s AND end_period = %s;"""
+        logger.info("Executing query: %s", query)
+        with self._database_connect() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("SET TIME ZONE 'UTC'")
+                try:
+                    cursor.execute(query, (start, end))
+                except psycopg2.DatabaseError as e:
+                    logger.error(f"Booking insertion failed: {e.args}")
+                    return False
+        return True
 
     # Need to run testing to ensure database created from this matches local environment
     def _setup_schema(self):
