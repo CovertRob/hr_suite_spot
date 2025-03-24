@@ -161,6 +161,7 @@ def get_booking_slots(database) -> list[list[datetime]]:
     """
     Booking slots to be used by front-end for display.
     Currently is day-of-week agnostic as it doesn't include that data since front-end doesn't need it for appointment picking.
+    Only retrieves those that are NOT booked.
 
     Input: database reference for connection.
 
@@ -168,8 +169,7 @@ def get_booking_slots(database) -> list[list[datetime]]:
     """
     # perform query on availability_period in database to retrieve open time slots for each day of the week
     time_periods = database.retrieve_availability_periods()
-    #pprint(time_periods)
-    #time_periods_in_iso = map(_map_to_iso, time_periods)
+    
     # Iterate over the time slots, segmenting them into 30 minute time slots and store them in a dictionary to the assocciated day of the week
     # Return dictionary containing segmented booking slots
     booking_slots = []
