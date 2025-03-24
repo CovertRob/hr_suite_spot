@@ -182,6 +182,20 @@ async = ["asgiref (>=3.2)"]
 dotenv = ["python-dotenv"]
 
 [[package]]
+name = "flask-debugtoolbar"
+version = "0.16.0"
+description = "A toolbar overlay for debugging Flask applications."
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "flask_debugtoolbar-0.16.0-py3-none-any.whl", hash = "sha256:2857a58ef20b88cf022a88bb7f0c6f6be1fb91a2e8b2d9fcc9079357a692083e"},
+    {file = "flask_debugtoolbar-0.16.0.tar.gz", hash = "sha256:3b925d4dcc09205471e5021019dfeb0eb6dabd6c184de16a3496dfb1f342afe1"},
+]
+
+[package.dependencies]
+flask = ">=2.3.0"
+
+[[package]]
 name = "google-api-core"
 version = "2.24.0"
 description = "Google API client core library"
@@ -637,4 +651,4 @@ watchdog = ["watchdog (>=2.3)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "9667cafbd5d5d3bcc7589c48b0bf5d10936bcc0674ee6d865d58243b24bb9965"
+content-hash = "200873c2c89fa80e6c25b0680730b566022139568d140a0d02cc983f2c7634e6"
