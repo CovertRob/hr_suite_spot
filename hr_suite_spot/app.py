@@ -1,14 +1,21 @@
 from datetime import timedelta, datetime
-from flask import Flask, render_template, request, flash, redirect, g
+from os import write
+from urllib import response
+import urllib.parse
+from flask import Flask, render_template, request, flash, redirect, g, Response, url_for
 import secrets
+
+import urllib
 from booking import database
 from booking import error_utils
 from booking import booking_utils as util
 from functools import wraps
 from pprint import pprint
 from werkzeug.datastructures import MultiDict
-import json
+from json import JSONDecoder, dumps
 from booking import booking_service
+from googleapiclient.http import HttpError
+from googleapiclient.http import HttpRequest
 
 def create_app():
     app = Flask(__name__)
@@ -125,7 +132,7 @@ def pick_coaching_call():
     appointments = util.get_booking_slots(g.db)
     # Remove the T for easier management on front-end and convert to ISO str
     appointments_in_iso = [slot.isoformat().replace('T', ' ') for day in appointments for slot in day]
-    appointments_json = json.dumps(appointments_in_iso)
+    appointments_json = dumps(appointments_in_iso)
     return render_template('booking.html', appointments=appointments_json)
 
 @app.route("/coaching/submit-appointment", methods=["POST"])
@@ -134,21 +141,41 @@ def book_coaching_call():
     # Google API requires the 'T':
     start_time = request.form['selected_datetime_utc'].replace(' ', 'T')
     end_time = (datetime.fromisoformat(start_time) + timedelta(minutes=30)).isoformat()
-    # Input form elements:
-    meeting = booking_service.BookingService({request.form['booking_name']: request.form['booking_email']}, {"start": f"{start_time}",
-    "end": f"{end_time}"})
-    # Display meeting information to user on front-end in addition to email from google:
-        # Add new route for confirmation screen
-    # Display success message if API call was successful
-    flash("Appointment booked", "success")
-    # How to manage and what to do if it isn't successful?
-    pprint(meeting.event_states)
-    return redirect("/booking/coaching")
+    # Create meeting resource with the googleapiclient:
+    try:
+        meeting = booking_service.BookingService({request.form['booking_name']: request.form['booking_email']}, {"start": f"{start_time}",
+        "end": f"{end_time}"}, 'Coaching Call')
+    except HttpError as e:
+        raise # re-raise the error to be caught by the error-handler
+    # Will execute if no exception is raised
+    else:
+        # Book appointment in database for local storage
+        flash("Appointment booked", "success")
+    
+    url = meeting.event_states.get('htmlLink')
+    # Pass event url from API response as query parameter
+    return redirect(url_for('booking_confirmation', event_states=url))
+
+@app.route('/coaching/submit-appointment/success/', methods=['GET'])
+def booking_confirmation():
+    event_url = request.args.get('event_states')
+    return render_template('booking_confirmation.html', confirmation_data=event_url)
+
+@app.template_filter('parse_confirmation_data')
+def parse_confirmation_data(data):
+    
+    return data
 
 @app.errorhandler(404)
 def error_handler(error):
     flash(f"An error occurred.", "error")
     return redirect("/index")
+
+# Handle in invalid googleapiclient response which raises a custom HttpError
+@app.errorhandler(HttpError)
+def handle_bad_api_call(error):
+    flash("An error occurred while booking your appointment. Please re-try.", "error")
+    return redirect("/booking/coaching")
 
 # Add resume route
 
