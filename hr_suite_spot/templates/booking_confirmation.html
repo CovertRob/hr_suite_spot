@@ -1,0 +1,10 @@
+{% extends 'layout_2.html' %}
+{% block content %}
+<section id="sbs-2180">
+  <div class="cs-container">
+    <div class="booking-confirmation">
+        {{ confirmation_data | parse_confirmation_data }}
+    </div>
+  </div>
+</section>
+{% endblock %}
