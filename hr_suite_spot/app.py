@@ -1,21 +1,17 @@
 from datetime import timedelta, datetime
-from os import write
-from urllib import response
-import urllib.parse
-from flask import Flask, render_template, request, flash, redirect, g, Response, url_for
+from venv import logger
+from flask import Flask, render_template, request, flash, redirect, g, url_for
 import secrets
-
-import urllib
+from flask_debugtoolbar import DebugToolbarExtension
 from booking import database
 from booking import error_utils
 from booking import booking_utils as util
 from functools import wraps
 from pprint import pprint
 from werkzeug.datastructures import MultiDict
-from json import JSONDecoder, dumps
+from json import dumps
 from booking import booking_service
 from googleapiclient.http import HttpError
-from googleapiclient.http import HttpRequest
 
 def create_app():
     app = Flask(__name__)
@@ -23,6 +19,10 @@ def create_app():
     return app
 
 app = create_app()
+app.debug = True
+app.config['SECRET_KEY'] = app.secret_key
+app.config["DEBUG_TB_INTERCEPT_REDIRECTS"] = False  # Prevents redirect issues
+toolbar = DebugToolbarExtension(app)
 
 # Use decorator to create g.db instance within request context window for functions that require it to conserve resources
 def instantiate_database(f):
@@ -150,6 +150,11 @@ def book_coaching_call():
     # Will execute if no exception is raised
     else:
         # Book appointment in database for local storage
+        if g.db.insert_booking(start_time, end_time):
+            logger.info("Booking submitted.")
+        else:
+            logger.error("Booking insertion  in db failed.")
+        # Show success if google api was successful
         flash("Appointment booked", "success")
     
     url = meeting.event_states.get('htmlLink')
