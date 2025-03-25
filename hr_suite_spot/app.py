@@ -1,8 +1,10 @@
 from datetime import timedelta, datetime
-from venv import logger
-from flask import Flask, render_template, request, flash, redirect, g, url_for
+import logging
+import os
+from flask import Flask, config, render_template, request, flash, redirect, g, session, url_for, jsonify
 import secrets
 from flask_debugtoolbar import DebugToolbarExtension
+from requests import get
 from booking import database
 from booking import error_utils
 from booking import booking_utils as util
@@ -12,17 +14,22 @@ from werkzeug.datastructures import MultiDict
 from json import dumps
 from booking import booking_service
 from googleapiclient.http import HttpError
+import stripe
+
+logger = logging.getLogger(__name__)
 
 def create_app():
     app = Flask(__name__)
     app.secret_key = secrets.token_hex(32) #256 bit
+    app.config['SECRET_KEY'] = app.secret_key
+    if os.environ.get('FLASK_ENV') == 'production':
+        app.config['DOMAIN'] = 'https://hrsuitespot.com'
+    else:
+        app.config['DOMAIN'] = 'http://localhost:5003'
+        app.config["DEBUG_TB_INTERCEPT_REDIRECTS"] = False  # Prevents redirect issues
     return app
 
 app = create_app()
-app.debug = True
-app.config['SECRET_KEY'] = app.secret_key
-app.config["DEBUG_TB_INTERCEPT_REDIRECTS"] = False  # Prevents redirect issues
-toolbar = DebugToolbarExtension(app)
 
 # Use decorator to create g.db instance within request context window for functions that require it to conserve resources
 def instantiate_database(f):
@@ -179,8 +186,78 @@ def error_handler(error):
 # Handle in invalid googleapiclient response which raises a custom HttpError
 @app.errorhandler(HttpError)
 def handle_bad_api_call(error):
-    flash("An error occurred while booking your appointment. Please re-try.", "error")
+    # Will need to handle this differently in the future if the google booking fails after the user has already paid
+    flash("An error occurred while booking your google appointment. Please re-try.", "error")
     return redirect("/booking/coaching")
+
+@app.route('/create-checkout-session', methods=['POST'])
+def create_checkout_session():
+    pass
+    coaching_call = "price_1R6LuhH8d4CYhArR8yogdHvb"
+
+@app.route('/session-status', methods=['GET'])
+def session_status():
+    session = stripe.checkout.Session.retrieve(request.args.get('session_id'))
+    return jsonify(status=session.status, customer_email=session.customer_details.email)
+
+# Web-hook route
+# Use the secret provided by Stripe CLI for local testing
+# or your webhook endpoint's secret.
+endpoint_secret = 'whsec_...'
+
+@app.route('/webhook', methods=['POST'])
+def stripe_webhook():
+    payload = request.get_data(as_text=True)
+    sig_header = request.headers.get('Stripe-Signature')
+    event = None
+
+    try:
+        # Verify the Stripe webhook signature
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, endpoint_secret
+        )
+    except ValueError:
+        # Invalid payload
+        return jsonify({"error": "Invalid payload"}), 400
+    except stripe.error.SignatureVerificationError:
+        # Invalid signature
+        return jsonify({"error": "Invalid signature"}), 400
+
+    # Handle the event when checkout is completed
+    if event["type"] in ["checkout.session.completed", "checkout.session.async_payment_succeeded"]:
+        fulfill_checkout(event["data"]["object"]["id"])
+
+    return jsonify({"status": "success"}), 200
+
+# Fulfillment function
+def fulfill_checkout(session_id):
+    print("Fulfilling Checkout Session", session_id)
+
+    # TODO: Make this function safe to run multiple times,
+    # even concurrently, with the same session ID
+
+    # TODO: Make sure fulfillment hasn't already been
+    # peformed for this Checkout Session
+
+    # Retrieve the Checkout Session from the API with line_items expanded
+    checkout_session = stripe.checkout.Session.retrieve(session_id, expand=['line_items'],)
+
+    # Check the Checkout Session's payment_status property
+    # to determine if fulfillment should be peformed
+    if checkout_session.payment_status != 'unpaid':
+        # TODO: Perform fulfillment of the line items
+
+        # TODO: Record/save fulfillment status for this
+        # Checkout Session
+        pass
+
+@app.route('/return', methods=['GET'])
+def checkout_return():
+    return render_template('return.html')
+
+@app.route('/checkout', methods=['GET'])
+def checkout():
+    return render_template('checkout.html')
 
 # Add resume route
 
@@ -189,6 +266,10 @@ def handle_bad_api_call(error):
 # Add Career Path route
 
 if __name__ == '__main__':
-    # util.generate_booking_slots()
-    app.run(debug=True, port=5003)
+    # production
+    if os.environ.get('FLASK_ENV') == 'production':
+       app.run(debug=False)
+    else:
+       app.run(debug=True, port=5003)
+       toolbar = DebugToolbarExtension(app)
     
