@@ -2,11 +2,11 @@
 {% block content %}
 <section id="sbs-2180">
   <div class="cs-container">
-    <script src="https://js.stripe.com/v3/"></script>
-    <script src="{{ url_for('static', filename='javascript/checkout.js') }}" defer></script>
     <div class="transition-piece booking_calendar">
 
-      <form id="appointment-form" method="POST" action="/coaching/submit-appointment">
+      <form id="appointment-form" method="POST" action="/booking/coaching/purchase">
+        <input type="hidden" id="coaching_call" name="checkout_type" value="coaching_call">
+        <input type="hidden" id="amount" name="checkout_amount" value="1">
         <input type="hidden" id="selected-datetime" name="appointment_datetime">
         <label> Enter Name:
           <input type="text" id="booking_name" name="booking_name" placeholder="First Last" required>
@@ -23,11 +23,6 @@
 
       <!-- Add this where you want to display the timezone information -->
       <div id="timezone-info" class="timezone-display"></div>
-
-      <!-- Display a payment form -->
-      <div id="checkout">
-        <!-- Checkout will insert the payment form here -->
-      </div>
 
       <!-- Include flatpickr CSS and JS -->
       <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
