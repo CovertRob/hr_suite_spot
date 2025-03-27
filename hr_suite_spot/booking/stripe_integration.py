@@ -7,11 +7,17 @@ import stripe
 
 class StripeProcessor:
     
-    def __init__(self, app: Flask, price_id: str):
+    def __init__(self, app: Flask, price_id: str, quantity: int, customer_info: Dict[str, str], ref_id):
         # Set domain for either prod or local dev
-        self.domain = app.config['DOMAIN']
+        self._domain = app.config['DOMAIN']
+        stripe.api_key = self._find_api_key()
+        self._checkout_session = self._create_checkout_session(price_id, quantity, customer_info, ref_id)
+    
+    @property
+    def get_checkout_session(self):
+        return self._checkout_session
 
-    def find_api_key(self) -> str:
+    def _find_api_key(self) -> str:
         api_key = os.getenv('STRIPE_API_KEY')
         # If none, then get local development key
         if not api_key:
@@ -30,7 +36,7 @@ class StripeProcessor:
 
 
 
-    def create_checkout_session(self, price_id: str, quantity: int, customer_info: Dict[str, str]):
+    def _create_checkout_session(self, price_id: str, quantity: int, customer_info: Dict[str, str], ref_id: str):
         try:
             session = stripe.checkout.Session.create(
                 ui_mode='embedded',
@@ -42,10 +48,9 @@ class StripeProcessor:
                     },
                 ],
                 mode='payment',
-                return_url=self.domain + '/return?session_id={CHECKOUT_SESSION_ID}',
-                metadata={
-                    'customer_info': customer_info
-                }
+                return_url=self._domain + '/return?session_id={CHECKOUT_SESSION_ID}',
+                metadata=customer_info,
+                client_reference_id=ref_id
             )
         except Exception as e:
             return str(e)
