@@ -1,10 +1,11 @@
 from datetime import timedelta, datetime
+import json
 import logging
 import os
-from flask import Flask, config, render_template, request, flash, redirect, g, session, url_for, jsonify
+from uuid import UUID, uuid4
+from flask import Flask, Response, render_template, request, flash, redirect, g, session, url_for, jsonify
 import secrets
 from flask_debugtoolbar import DebugToolbarExtension
-from requests import get
 from booking import database
 from booking import error_utils
 from booking import booking_utils as util
@@ -15,6 +16,8 @@ from json import dumps
 from booking import booking_service
 from googleapiclient.http import HttpError
 import stripe
+from stripe import SignatureVerificationError
+from booking import stripe_integration
 
 logger = logging.getLogger(__name__)
 
@@ -23,13 +26,16 @@ def create_app():
     app.secret_key = secrets.token_hex(32) #256 bit
     app.config['SECRET_KEY'] = app.secret_key
     if os.environ.get('FLASK_ENV') == 'production':
-        app.config['DOMAIN'] = 'https://hrsuitespot.com'
+        app.config['DOMAIN'] = 'https://www.hrsuitespot.com'
     else:
         app.config['DOMAIN'] = 'http://localhost:5003'
         app.config["DEBUG_TB_INTERCEPT_REDIRECTS"] = False  # Prevents redirect issues
     return app
 
 app = create_app()
+
+# Static Stripe price-id's (short-term fix):
+STRIPE_PRICE_IDS = {"coaching_call": "price_1R6LuhH8d4CYhArR8yogdHvb"}
 
 # Use decorator to create g.db instance within request context window for functions that require it to conserve resources
 def instantiate_database(f):
@@ -69,7 +75,7 @@ def get_contact():
 
 # Admin page for user to submit their availability to the system for appointments to be booked against.
 # Future - add authentication protection to route
-@app.route("/calendar", methods=['GET'])
+@app.route("/calendar_availability", methods=['GET'])
 def get_calendar():
     days_of_week = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
     return render_template('calendar.html', days_of_week=days_of_week)
@@ -142,31 +148,38 @@ def pick_coaching_call():
     appointments_json = dumps(appointments_in_iso)
     return render_template('booking.html', appointments=appointments_json)
 
-@app.route("/coaching/submit-appointment", methods=["POST"])
-@instantiate_database
-def book_coaching_call():
+@app.route("/booking/coaching/purchase", methods=["POST"])
+def purchase_coaching_call():
     # Google API requires the 'T':
-    start_time = request.form['selected_datetime_utc'].replace(' ', 'T')
+    selected_datetime_utc = request.form['selected_datetime_utc'].replace(' ', 'T')
+    booking_name = request.form['booking_name']
+    booking_email = request.form['booking_email']
+    checkout_type = "coaching_call"
+    checkout_amount = "1"
+    # Redirect to checkout session page with necessary params
+    return redirect(url_for('checkout', booking_name=booking_name, booking_email=booking_email, checkout_type=checkout_type, checkout_amount=checkout_amount, selected_datetime_utc=selected_datetime_utc))
+
+def book_coaching_call(db, datetime_utc: str, booking_name: str, booking_email: str, client_ref_id: UUID):
+    # Google API requires the 'T':
+    start_time = datetime_utc.replace(' ', 'T')
     end_time = (datetime.fromisoformat(start_time) + timedelta(minutes=30)).isoformat()
     # Create meeting resource with the googleapiclient:
     try:
-        meeting = booking_service.BookingService({request.form['booking_name']: request.form['booking_email']}, {"start": f"{start_time}",
+        meeting = booking_service.BookingService({booking_name: booking_email}, {"start": f"{start_time}",
         "end": f"{end_time}"}, 'Coaching Call')
     except HttpError as e:
         raise # re-raise the error to be caught by the error-handler
     # Will execute if no exception is raised
     else:
-        # Book appointment in database for local storage
-        if g.db.insert_booking(start_time, end_time):
+        # Book appointment in database for local storage by updating appointment record as is_booked=True
+        if db.insert_booking(start_time, end_time, client_ref_id):
             logger.info("Booking submitted.")
         else:
             logger.error("Booking insertion  in db failed.")
-        # Show success if google api was successful
-        flash("Appointment booked", "success")
+    # Return response object to indicate booking was successful
+    return meeting.event_states
     
-    url = meeting.event_states.get('htmlLink')
-    # Pass event url from API response as query parameter
-    return redirect(url_for('booking_confirmation', event_states=url))
+    
 
 @app.route('/coaching/submit-appointment/success/', methods=['GET'])
 def booking_confirmation():
@@ -190,15 +203,32 @@ def handle_bad_api_call(error):
     flash("An error occurred while booking your google appointment. Please re-try.", "error")
     return redirect("/booking/coaching")
 
+# Note: this route requires the submission of query parameters
 @app.route('/create-checkout-session', methods=['POST'])
 def create_checkout_session():
-    pass
-    coaching_call = "price_1R6LuhH8d4CYhArR8yogdHvb"
+    # Protect endpont from cross-site requests and forgery
+    # origin = request.headers.get("Origin") or request.headers.get("Referer")
+    # if not app.config['DOMAIN'] in origin:
+    #     return jsonify({"error": "Unauthorized Request"}), 403 # Forbidden
 
-@app.route('/session-status', methods=['GET'])
-def session_status():
-    session = stripe.checkout.Session.retrieve(request.args.get('session_id'))
-    return jsonify(status=session.status, customer_email=session.customer_details.email)
+    # Get query parameters
+    checkout_type = request.args.get("checkout_type")
+    price_id = STRIPE_PRICE_IDS[checkout_type]
+    amount = int(request.args.get("checkout_amount"))
+    # Not all customer info query params may exist, depends on purchase being made
+    customer_info = {
+        "checkout_type": checkout_type,
+        "booking_name": request.args.get("booking_name", ""), 
+        "booking_email": request.args.get("booking_email", ""), "selected_datetime_utc": request.args.get("selected_datetime_utc", ""),
+        }
+    # Generate client reference id to attach
+    ref_id = uuid4()
+    # Store potential purchase at the return? endpoint to avoid storng people just checking out the purchase page
+
+    # Create and return checkout session with attached meta-data
+    payment_processor = stripe_integration.StripeProcessor(app, price_id, amount, customer_info, ref_id)
+
+    return payment_processor.get_checkout_session
 
 # Web-hook route
 # Use the secret provided by Stripe CLI for local testing
@@ -206,56 +236,130 @@ def session_status():
 endpoint_secret = 'whsec_...'
 
 @app.route('/webhook', methods=['POST'])
+@instantiate_database
 def stripe_webhook():
-    payload = request.get_data(as_text=True)
+    # Stripe webhook shouldn't be over 8-10kb
+    MAX_CONTENT_LENGTH = 100 * 1024 # 100KB
+
+    content_length = request.headers.get('Content-Length', None)
+    if content_length: # If not None
+        content_length = int(content_length)
+        if content_length > MAX_CONTENT_LENGTH:
+            logger.error(f"Rejecting webhook request. Payload too large: {content_length}")
+            return jsonify({"error": "Max content length exceeded"}), 413
+    # If it is None, manually verify length
+    total_size = 0
+    payload_chunks = []
+    for chunk in request.stream:
+        total_size += len(chunk)
+        if total_size > MAX_CONTENT_LENGTH:
+            logger.error(f"Rejecting webhook request. Payload too large: {content_length}")
+            return jsonify({"error": "Max content length exceeded"}), 413
+        payload_chunks.append(chunk)
+
+    # Join into payload since stream can only be read once
+    payload = b"".join(payload_chunks).decode("utf-8", errors='replace')
     sig_header = request.headers.get('Stripe-Signature')
     event = None
 
     try:
         # Verify the Stripe webhook signature
+        # Event will be a Checkout Session object
         event = stripe.Webhook.construct_event(
             payload, sig_header, endpoint_secret
         )
     except ValueError:
         # Invalid payload
         return jsonify({"error": "Invalid payload"}), 400
-    except stripe.error.SignatureVerificationError:
+    except SignatureVerificationError:
         # Invalid signature
         return jsonify({"error": "Invalid signature"}), 400
 
     # Handle the event when checkout is completed
     if event["type"] in ["checkout.session.completed", "checkout.session.async_payment_succeeded"]:
-        fulfill_checkout(event["data"]["object"]["id"])
-
+        # In future, use an event queue to speed up code 200 response
+        # Should return a Response object
+        fulfill_checkout(event, g.db)
+        
+    else:
+        return jsonify({"error": "Invalid event type"}), 400
+    # Catch all response to avoid timeout
+    logger.info("Catch all response reached on webhook function.")
     return jsonify({"status": "success"}), 200
 
 # Fulfillment function
-def fulfill_checkout(session_id):
-    print("Fulfilling Checkout Session", session_id)
+def fulfill_checkout(event, db) -> Response:
+    logger.info("Fulfilling Checkout Session:", event.id)
 
+    FULFILLMENT_TYPES = ['resume_guide', 'coaching_call']
+    
     # TODO: Make this function safe to run multiple times,
     # even concurrently, with the same session ID
+    # Handled via the database function - Done
 
     # TODO: Make sure fulfillment hasn't already been
-    # peformed for this Checkout Session
+    # peformed for this Checkout Session - Done
+    pprint(event)
+    checkout_session = stripe.checkout.Session.retrieve(
+    event.id, expand=['line_items'])
+    client_ref_id = checkout_session.client_reference_id
+    meta_data_as_json = json.dumps(checkout_session.client_reference_id)
+    # If the record already exists, Postgres function will return the boolean fulfillment status, otherwise will insert new record and return fulfillment status as False
+    fulfillment_status = db.check_or_insert_fulfillment(client_ref_id, meta_data_as_json, False)
 
-    # Retrieve the Checkout Session from the API with line_items expanded
-    checkout_session = stripe.checkout.Session.retrieve(session_id, expand=['line_items'],)
-
+    payment_status = checkout_session.payment_status
+    customer_info = checkout_session.metadata
+    fulfillment_action_type = customer_info.get('checkout_type')
     # Check the Checkout Session's payment_status property
     # to determine if fulfillment should be peformed
-    if checkout_session.payment_status != 'unpaid':
+    if payment_status != 'unpaid' and not fulfillment_status:
         # TODO: Perform fulfillment of the line items
+        match fulfillment_action_type:
+            case 'coaching_call':
+                # Function returns meeting event_states
+                event_states = book_coaching_call(db, customer_info.get('selected_datetime_utc'), customer_info.get('booking_name'), customer_info.get('booking_email'), client_ref_id)
+                return True
+            case 'resume_guide':
+                pass
+            case _:
+                return False
+    return False
 
-        # TODO: Record/save fulfillment status for this
-        # Checkout Session
-        pass
+@app.route('/success')
+def success():
+    return render_template('success.html')
 
 @app.route('/return', methods=['GET'])
+@instantiate_database
 def checkout_return():
-    return render_template('return.html')
+    session = stripe.checkout.Session.retrieve(request.args.get("session_id"))
+    fulfillment_status = False
+    # Log prior generated client_reference_id prior to any actions to store payment attempt to enable manual intervention if needed
+    client_ref_id = uuid4()
+    meta_data_as_json = json.dumps(session.metadata)
+    # Fulfill product purchased if successful, otherwise return to homepage
+    if session.status == 'open' or session.status == 'expired':
+        logger.error(f"Stripe processor error: payment_stauts: {session.payment_status}, fulfillment status: {fulfillment_status}")
+        # Store reference to purchase attempt in local db
+        g.db.insert_fulfillment(client_ref_id, meta_data_as_json, False)
+        flash("Payment failed or cancelled. Please try again.", "error")
+        return render_template(url_for('index'))
+    
+    if session.status == 'complete' and session.payment_status == 'paid':
+        customer_info = session.metadata
+        # Storage of reference to purchase will happen in fulfillment function to avoid duplicate database connection with successful payments
+        fulfillment_status = fulfill_checkout(session, g.db)
+        logger.info(f"Stripe processor success: payment_stauts: {session.payment_status}, fulfillment status: {fulfillment_status}")
+        # Still need to handle and pass event states for successs page
+        return render_template('success.html')
+    
+    # General failure for unknown reason
+    g.db.insert_fulfillment(client_ref_id, meta_data_as_json, False)
+    logger.error(f"Stripe processor error: payment_stauts: {session.payment_status}, fulfillment status: {fulfillment_status}")
+    flash("An error occurred. Please try again.", "error")
+    return render_template(url_for('index'))
 
-@app.route('/checkout', methods=['GET'])
+@app.route("/checkout")
 def checkout():
     return render_template('checkout.html')
 
