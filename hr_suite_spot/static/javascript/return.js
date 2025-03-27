@@ -10,6 +10,7 @@ async function initialize() {
   if (session.status == 'open') {
     window.location.replace('http://localhost:5003/checkout.html')
   } else if (session.status == 'complete') {
+    window.location.replace(`http://localhost:5003/success?session_id=${sessionId}`)
     document.getElementById('success').classList.remove('hidden');
     document.getElementById('customer-email').textContent = session.customer_email
   }
