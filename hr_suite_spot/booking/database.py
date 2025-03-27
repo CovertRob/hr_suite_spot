@@ -1,4 +1,4 @@
-import pprint
+from uuid import UUID
 import psycopg2
 from psycopg2.extras import DictCursor
 from contextlib import contextmanager
@@ -6,6 +6,7 @@ import logging
 import os
 from werkzeug.datastructures import MultiDict
 from pprint import pprint
+from typing import Dict
 
 LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
 logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
@@ -92,22 +93,51 @@ class DatabasePersistence:
                 availability_data = cursor.fetchall()
         return availability_data
 
-    def insert_booking(self, start, end):
+    def insert_booking(self, start, end, client_ref_id=None):
         """
         Marks a booking period in the availability_period table as booked by marking the 'is_booked' column value as True.
-        
+        Inserts the UUID if passed otherwise Null
         """
-        query = """UPDATE availability_period SET is_booked = TRUE WHERE begin_period = %s AND end_period = %s;"""
+        pprint(start)
+        pprint(end)
+        query = """UPDATE availability_period SET is_booked = TRUE, client_ref_id = %s WHERE begin_period = %s AND end_period = %s;"""
         logger.info("Executing query: %s", query)
         with self._database_connect() as conn:
             with conn.cursor() as cursor:
                 cursor.execute("SET TIME ZONE 'UTC'")
                 try:
-                    cursor.execute(query, (start, end))
+                    cursor.execute(query, (client_ref_id, start, end))
                 except psycopg2.DatabaseError as e:
                     logger.error(f"Booking insertion failed: {e.args}")
                     return False
         return True
+
+    def insert_fulfillment(self, ref_id: UUID, meta_data: Dict[str, str], fulfillment_status=False):
+        query = """INSERT INTO product_fulfillments (client_ref_id, meta_data, is_fulfilled) VALUES (%s, %s, %s)"""
+        logger.info("Executing query: %s", query)
+        with self._database_connect() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("SET TIME ZONE 'UTC'")
+                try:
+                    cursor.execute(query, (ref_id, meta_data, fulfillment_status))
+                except psycopg2.DatabaseError as e:
+                    logger.error(f"Fulfillment insertion failed: {e.args}")
+                    return False
+        return True
+    
+    def check_or_insert_fulfillment(self, ref_id: UUID, meta_data: str, fulfillment_status) -> bool:
+        query = "SELECT check_or_insert_fulfillment(%s, %s, %s)"
+        logger.info("Executing query: %s", query)
+        fulfillment_status_from_function = False
+        with self._database_connect() as conn:
+            with conn.cursor() as cursor:
+                try:
+                    cursor.execute(query, (ref_id, meta_data, fulfillment_status))
+                    fulfillment_status_from_function = cursor.fetchone()[0] # Should be True or False
+                except psycopg2.DatabaseError as e:
+                    logger.error(f"Fulfillment insertion failed: {e.args}")
+                    return False        
+        return fulfillment_status_from_function
 
     # Need to run testing to ensure database created from this matches local environment
     def _setup_schema(self):
@@ -149,7 +179,8 @@ class DatabasePersistence:
                                 begin_period timestamp with time zone NOT NULL,
                                 end_period timestamp with time zone NOT NULL,
                                 availability_day_id integer NOT NULL REFERENCES availability_day (id),
-                                is_booked boolean DEFAULT false
+                                is_booked boolean DEFAULT false,
+                                client_ref_id UUID REFERENCES product_fulfillments(client_ref_id)
                                 );""")
                 cursor.execute("""
                     SELECT COUNT(*)
@@ -162,9 +193,96 @@ class DatabasePersistence:
                                    id serial PRIMARY KEY,
                                    availability_period_id integer NOT NULL REFERENCES availability_period (id));
                                    """)
+                cursor.execute("""
+                    SELECT COUNT(*)
+                    FROM information_schema.tables
+                    WHERE table_schema = 'public' AND table_name = 'product_fulfillments';
+                """)
+                if cursor.fetchone()[0] == 0:
+                    cursor.execute("""CREATE TABLE product_fulfillments (
+                                id serial PRIMARY KEY NOT NULL,
+                                created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                                client_ref_id UUID UNIQUE NOT NULL,
+                                meta_data JSONB NOT NULL,
+                                is_fulfilled boolean DEFAULT false
+                                );""")
                 self._setup_availability_period_function(cursor)
+                self._setup_purchase_fulfillment_function(cursor)
+                self._setup_booking_to_fulfillment_trigger(cursor)
                 # Set as UTC so we retrieve data in UTC for conversion on front-end
+                # Don't think this really changes anything bc timezone is dependent on each cursor connection but I'm going to leave it for good measure
                 cursor.execute("SET TIME ZONE 'UTC';")
+
+    def _setup_booking_to_fulfillment_trigger(self, cursor):
+        check_function_query = """
+                                SELECT EXISTS (
+                                SELECT 1
+                                FROM pg_proc
+                                JOIN pg_namespace ON pg_proc.pronamespace = pg_namespace.oid
+                                WHERE proname = %s AND nspname = %s);
+                                """
+        function_name = 'update_fulfillment_on_booking'
+        schema_name = 'public'
+        # Check if the function exists within the database
+        cursor.execute(check_function_query, (function_name, schema_name))
+        function_exists = cursor.fetchone()[0]
+        if not function_exists:
+            create_function_query = """
+            CREATE OR REPLACE FUNCTION update_fulfillment_on_booking()
+            RETURNS TRIGGER AS $$
+            BEGIN
+                -- Only proceed if the new status is booked, and it wasn't booked before
+                IF NEW.is_booked = TRUE AND OLD.is_booked IS DISTINCT FROM TRUE THEN
+                    UPDATE product_fulfillments
+                    SET is_fulfilled = TRUE
+                    WHERE client_ref_id = NEW.client_ref_id;
+                END IF;
+                RETURN NEW;
+            END;
+            $$ LANGUAGE plpgsql;"""
+            create_trigger_query = """
+            CREATE TRIGGER trigger_fulfillment_on_booking
+            AFTER UPDATE ON availability_period
+            FOR EACH ROW
+            WHEN (OLD.is_booked IS DISTINCT FROM NEW.is_booked)
+            EXECUTE FUNCTION update_fulfillment_on_booking();"""
+            cursor.execute(create_function_query)
+            cursor.execute(create_trigger_query)
+
+    def _setup_purchase_fulfillment_function(self, cursor):
+        check_function_query = """
+                                SELECT EXISTS (
+                                SELECT 1
+                                FROM pg_proc
+                                JOIN pg_namespace ON pg_proc.pronamespace = pg_namespace.oid
+                                WHERE proname = %s AND nspname = %s);
+                                """
+        function_name = 'check_or_insert_fulfillment'
+        schema_name = 'public'
+        # Check if the function exists within the database
+        cursor.execute(check_function_query, (function_name, schema_name))
+        function_exists = cursor.fetchone()[0]
+        if not function_exists:
+            create_function_query = """
+            CREATE FUNCTION check_or_insert_fulfillment(p_client_ref_id UUID, p_meta_data JSONB, fulfillment_status BOOLEAN)
+            RETURNS BOOLEAN AS $$
+            DECLARE
+                fulfilled_status BOOLEAN;
+            BEGIN
+                -- Try to insert, do nothing if conflict
+                INSERT INTO product_fulfillments (client_ref_id, meta_data, is_fulfilled)
+                VALUES (p_client_ref_id, p_meta_data, fulfillment_status)
+                ON CONFLICT (client_ref_id) DO NOTHING;
+
+                -- Now fetch the row (whether newly inserted or pre-existing)
+                SELECT is_fulfilled INTO fulfilled_status
+                FROM product_fulfillments
+                WHERE client_ref_id = p_client_ref_id;
+
+                RETURN fulfilled_status;
+            END;
+            $$ LANGUAGE plpgsql;"""
+            cursor.execute(create_function_query)
 
     def _setup_availability_period_function(self, cursor):
         """set up the function to run in the database that will check if availability periods exist for a given day of the week or not and if they do it will delete and overwrite the data when user resubmits new data
