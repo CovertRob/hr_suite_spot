@@ -313,6 +313,8 @@ class DatabasePersistence:
                         -- Delete existing availability
                         DELETE FROM availability_period
                         WHERE availability_day_id = day_of_week_id
+                        --prevent deletion of booked periods
+                        AND is_booked = FALSE
                         -- Delete overlapping time periods
                         AND begin_period < finish_period
                         AND end_period > start_period;
