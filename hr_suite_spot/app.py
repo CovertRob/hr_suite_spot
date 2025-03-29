@@ -3,8 +3,9 @@ import json
 import logging
 import os
 from uuid import UUID, uuid4
-from flask import Flask, Response, render_template, request, flash, redirect, g, session, url_for, jsonify
+from flask import Flask, Response, render_template, request, flash, redirect, g, url_for, jsonify
 import secrets
+from flask.cli import pass_script_info
 from flask_debugtoolbar import DebugToolbarExtension
 from booking import database
 from booking import error_utils
@@ -33,6 +34,7 @@ def create_app():
     return app
 
 app = create_app()
+app.debug=True
 
 # Static Stripe price-id's (short-term fix):
 STRIPE_PRICE_IDS = {"coaching_call": "price_1R6LuhH8d4CYhArR8yogdHvb"}
@@ -177,8 +179,7 @@ def book_coaching_call(db, datetime_utc: str, booking_name: str, booking_email: 
             logger.error("Booking insertion  in db failed.")
     # Return response object to indicate booking was successful
     return meeting.event_states
-    
-    
+
 
 @app.route('/coaching/submit-appointment/success/', methods=['GET'])
 def booking_confirmation():
@@ -187,8 +188,8 @@ def booking_confirmation():
 
 @app.template_filter('parse_confirmation_data')
 def parse_confirmation_data(data):
-    
-    return data
+    thank_you = f"Thank you for your purchase, {data['customer_info']}!\nYou will receive an email with the meeting details."
+    return thank_you
 
 @app.errorhandler(404)
 def error_handler(error):
@@ -336,8 +337,8 @@ def fulfill_checkout(event, db) -> bool:
     return False
 
 @app.route('/success')
-def success():
-    return render_template('success.html')
+def checkout_success():
+    return render_template('booking_confirmation.html', confirmation_data=request.args)
 
 @app.route('/return', methods=['GET'])
 @instantiate_database
@@ -347,7 +348,6 @@ def checkout_return():
     # Log prior generated client_reference_id prior to any actions to store payment attempt to enable manual intervention if needed
     client_ref_id = session.client_reference_id
     meta_data_as_json = json.dumps(session.metadata)
-    pprint(meta_data_as_json)
     # Fulfill product purchased if successful, otherwise return to homepage
     if session.status == 'open' or session.status == 'expired':
         logger.error(f"Stripe processor error: payment_stauts: {session.payment_status}, fulfillment status: {fulfillment_status}")
@@ -357,12 +357,12 @@ def checkout_return():
         return render_template(url_for('index'))
     
     if session.status == 'complete' and session.payment_status == 'paid':
-        customer_info = session.metadata
+        customer_name = session.metadata.get('booking_name')
         # Storage of reference to purchase will happen in fulfillment function to avoid duplicate database connection with successful payments
         fulfillment_status = fulfill_checkout(session, g.db)
         logger.info(f"Stripe processor success: payment_stauts: {session.payment_status}, fulfillment status: {fulfillment_status}")
         # Still need to handle and pass event states for successs page
-        return render_template('success.html')
+        return redirect(url_for('checkout_success', customer_info=customer_name))
     
     # General failure for unknown reason
     g.db.insert_fulfillment(client_ref_id, meta_data_as_json, False)
@@ -385,6 +385,7 @@ if __name__ == '__main__':
     if os.environ.get('FLASK_ENV') == 'production':
        app.run(debug=False)
     else:
-       app.run(debug=True, port=5003)
        toolbar = DebugToolbarExtension(app)
+       app.run(debug=True, port=5003)
+       
     
