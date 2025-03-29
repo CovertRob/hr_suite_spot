@@ -312,7 +312,7 @@ def fulfill_checkout(event, db) -> bool:
         event.id, expand=['line_items'])
 
     client_ref_id = checkout_session.client_reference_id
-    meta_data_as_json = json.dumps(checkout_session.client_reference_id)
+    meta_data_as_json = json.dumps(checkout_session.metadata)
     # If the record already exists, Postgres function will return the boolean fulfillment status, otherwise will insert new record and return fulfillment status as False
     fulfillment_status = db.check_or_insert_fulfillment(client_ref_id, meta_data_as_json, False)
 
@@ -345,8 +345,9 @@ def checkout_return():
     session = stripe.checkout.Session.retrieve(request.args.get("session_id"))
     fulfillment_status = False
     # Log prior generated client_reference_id prior to any actions to store payment attempt to enable manual intervention if needed
-    client_ref_id = uuid4()
+    client_ref_id = session.client_reference_id
     meta_data_as_json = json.dumps(session.metadata)
+    pprint(meta_data_as_json)
     # Fulfill product purchased if successful, otherwise return to homepage
     if session.status == 'open' or session.status == 'expired':
         logger.error(f"Stripe processor error: payment_stauts: {session.payment_status}, fulfillment status: {fulfillment_status}")
@@ -358,7 +359,7 @@ def checkout_return():
     if session.status == 'complete' and session.payment_status == 'paid':
         customer_info = session.metadata
         # Storage of reference to purchase will happen in fulfillment function to avoid duplicate database connection with successful payments
-        # fulfillment_status = fulfill_checkout(session, g.db)
+        fulfillment_status = fulfill_checkout(session, g.db)
         logger.info(f"Stripe processor success: payment_stauts: {session.payment_status}, fulfillment status: {fulfillment_status}")
         # Still need to handle and pass event states for successs page
         return render_template('success.html')
