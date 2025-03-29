@@ -124,7 +124,6 @@ def submit_availability():
     
     # Insert the availability into the local database for each day of the week
     # If fails, logs database error and returns false
-    #pprint(appointments)
     
     if g.db.insert_availability(appointments):
         flash("Availability submitted", "success")
@@ -233,7 +232,7 @@ def create_checkout_session():
 # Web-hook route
 # Use the secret provided by Stripe CLI for local testing
 # or your webhook endpoint's secret.
-endpoint_secret = 'whsec_...'
+endpoint_secret = 'whsec_724431fe58f3768bb230cfa4ff30e72e96587192160691a201acaad0a9f3dbf2'
 
 @app.route('/webhook', methods=['POST'])
 @instantiate_database
@@ -265,43 +264,53 @@ def stripe_webhook():
     try:
         # Verify the Stripe webhook signature
         # Event will be a Checkout Session object
+        logger.info("Constructing event via webhook")
         event = stripe.Webhook.construct_event(
-            payload, sig_header, endpoint_secret
-        )
+            payload, sig_header, endpoint_secret)
+        logger.info(f"Event constructed: {event}")
     except ValueError:
         # Invalid payload
+        logger.error("Invalid webhook payload")
         return jsonify({"error": "Invalid payload"}), 400
     except SignatureVerificationError:
         # Invalid signature
+        logger.error("Invalid webhook signature")
         return jsonify({"error": "Invalid signature"}), 400
 
     # Handle the event when checkout is completed
     if event["type"] in ["checkout.session.completed", "checkout.session.async_payment_succeeded"]:
         # In future, use an event queue to speed up code 200 response
         # Should return a Response object
-        fulfill_checkout(event, g.db)
-        
+        logger.info("Fulfilling checkout via webhook")
+        if fulfill_checkout(event, g.db):
+            return jsonify({"status": "success"}), 200        
     else:
+        logger.error("Invalid webhook event type")
         return jsonify({"error": "Invalid event type"}), 400
     # Catch all response to avoid timeout
     logger.info("Catch all response reached on webhook function.")
     return jsonify({"status": "success"}), 200
 
 # Fulfillment function
-def fulfill_checkout(event, db) -> Response:
-    logger.info("Fulfilling Checkout Session:", event.id)
+def fulfill_checkout(event, db) -> bool:
+    """
+    Fulfills a product for customer once payment is received.
+
+    Args: event is either a checkout.session.complete JSON payload via webhook or a checkout.Session passed via client re-direct.
+
+    Returns: boolean value representing fulfillment of product
+    """
+    logger.info("Fulfilling Checkout Session")
 
     FULFILLMENT_TYPES = ['resume_guide', 'coaching_call']
     
-    # TODO: Make this function safe to run multiple times,
-    # even concurrently, with the same session ID
-    # Handled via the database function - Done
+    # Use get() since regular dict subscripting will cause key-error if event is a checkout session type
+    if event.get('type', '') == 'checkout.session.completed':
+        checkout_session = stripe.checkout.Session.construct_from(event['data']['object'], key='object')
+    else: 
+        checkout_session = stripe.checkout.Session.retrieve(
+        event.id, expand=['line_items'])
 
-    # TODO: Make sure fulfillment hasn't already been
-    # peformed for this Checkout Session - Done
-    pprint(event)
-    checkout_session = stripe.checkout.Session.retrieve(
-    event.id, expand=['line_items'])
     client_ref_id = checkout_session.client_reference_id
     meta_data_as_json = json.dumps(checkout_session.client_reference_id)
     # If the record already exists, Postgres function will return the boolean fulfillment status, otherwise will insert new record and return fulfillment status as False
@@ -323,6 +332,7 @@ def fulfill_checkout(event, db) -> Response:
                 pass
             case _:
                 return False
+    logger.info(f"Fulfillment_status: {fulfillment_status}. Skipping fulfillment")
     return False
 
 @app.route('/success')
@@ -348,7 +358,7 @@ def checkout_return():
     if session.status == 'complete' and session.payment_status == 'paid':
         customer_info = session.metadata
         # Storage of reference to purchase will happen in fulfillment function to avoid duplicate database connection with successful payments
-        fulfillment_status = fulfill_checkout(session, g.db)
+        # fulfillment_status = fulfill_checkout(session, g.db)
         logger.info(f"Stripe processor success: payment_stauts: {session.payment_status}, fulfillment status: {fulfillment_status}")
         # Still need to handle and pass event states for successs page
         return render_template('success.html')
