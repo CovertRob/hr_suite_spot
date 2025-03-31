@@ -3,7 +3,7 @@ import json
 import logging
 import os
 from uuid import UUID, uuid4
-from flask import Flask, Response, render_template, request, flash, redirect, g, url_for, jsonify
+from flask import Flask, render_template, request, flash, redirect, g, url_for, jsonify
 import secrets
 from flask.cli import pass_script_info
 from flask_debugtoolbar import DebugToolbarExtension
@@ -11,7 +11,6 @@ from booking import database
 from booking import error_utils
 from booking import booking_utils as util
 from functools import wraps
-from pprint import pprint
 from werkzeug.datastructures import MultiDict
 from json import dumps
 from booking import booking_service
@@ -19,6 +18,7 @@ from googleapiclient.http import HttpError
 import stripe
 from stripe import SignatureVerificationError
 from booking import stripe_integration
+from booking import mailchimp_integration
 
 logger = logging.getLogger(__name__)
 
@@ -371,6 +371,31 @@ def checkout_return():
 @app.route("/checkout")
 def checkout():
     return render_template('checkout.html')
+
+# Route for GET subscrbe pages
+
+@app.route("/subscribe", methods=['POST'])
+def submit_to_mailchimp():
+    # Get the email and product type being subscribed to, if any, from the args passed
+    user_email = request.args.get('user_email')
+    # Right now, this can only be for resume guide or Q&A guide. The salary negotiation guide, since it's a purchase, will be submitted without a tag. Someone just subscribing to mailing list will be submitted with no tag.
+    journey_tag = request.args.get('product_subscription', '')
+    submission_status = None
+    try:
+        mailchimp = mailchimp_integration.MailChimpIntegration()
+        if journey_tag:
+            submission_status = mailchimp.submit_member_to_mailchimp(user_email, journey_tag)
+        else:
+            submission_status = mailchimp.submit_member_to_mailchimp(user_email)
+    except Exception:
+        logger.error('An error occurred during MailChimp submission. Inspect logs.')
+        flash('An error occurred. Please try again')
+        return redirect(request.path)
+    if submission_status:
+        flash('Success! Thanks for subscribing.', 'success')
+        return redirect(request.path)
+    flash('An error occurred. Please try again.', 'error')
+    return redirect(request.path)
 
 # Add resume route
 
