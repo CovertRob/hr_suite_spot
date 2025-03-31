@@ -188,7 +188,7 @@ def booking_confirmation():
 
 @app.template_filter('parse_confirmation_data')
 def parse_confirmation_data(data):
-    thank_you = f"Thank you for your purchase, {data['customer_info']}!\nYou will receive an email with the meeting details."
+    thank_you = f"Thank you for your purchase, {data['customer_info']}!\nYou will receive an email with the meeting details. If you have any questions please reach out to contact@hrsuitespot.com"
     return thank_you
 
 @app.errorhandler(404)
@@ -302,8 +302,6 @@ def fulfill_checkout(event, db) -> bool:
     Returns: boolean value representing fulfillment of product
     """
     logger.info("Fulfilling Checkout Session")
-
-    FULFILLMENT_TYPES = ['resume_guide', 'coaching_call']
     
     # Use get() since regular dict subscripting will cause key-error if event is a checkout session type
     if event.get('type', '') == 'checkout.session.completed':
