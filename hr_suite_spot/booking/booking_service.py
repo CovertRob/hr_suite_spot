@@ -7,14 +7,13 @@ from pprint import pprint
 from googleapiclient.http import HttpRequest, _retry_request, HttpError
 import logging
 import urllib
+import os
+import json
 
 logger = logging.getLogger(__name__)
 
-# Path to your Service Account JSON key
-SERVICE_ACCOUNT_FILE = Path("./booking/hr-suite-spot-8164bd363e86.json")
-
 # The email of the business user you are impersonating
-BUSINESS_EMAIL = "jasmin.scalli@hrsuitespot.com"
+BUSINESS_EMAIL = "contact@hrsuitespot.com"
 
 # Define the required scope
 SCOPES = ["https://www.googleapis.com/auth/calendar"]
@@ -25,11 +24,22 @@ class BookingService:
         guests = [{"email": email} for email in guests.values()]
         self.service = self._authorize()
         self.event_states = self._plan_event(guests, schedule, self.service, meeting_name)
+    
+    @staticmethod
+    def _find_api_key() -> str:
+        """
+        Since Credentials.from_service_acccount_file() takes file path, find the file path to either the environment variable in prod or local dev file.
+        """
+        api_key_path = os.getenv('SERVICE_ACCOUNT_FILE')
+        # If none, then get local development key
+        if not api_key_path:
+            api_key_path = Path("./booking/hr-suite-spot-8164bd363e86.json")
+        return api_key_path
 
     @staticmethod
     def _authorize():
         creds = service_account.Credentials.from_service_account_file(
-            SERVICE_ACCOUNT_FILE,
+            BookingService._find_api_key(),
             scopes=SCOPES,
             subject=BUSINESS_EMAIL  # Impersonating the business email
         )
