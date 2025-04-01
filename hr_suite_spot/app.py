@@ -5,7 +5,6 @@ import os
 from uuid import UUID, uuid4
 from flask import Flask, render_template, request, flash, redirect, g, url_for, jsonify
 import secrets
-from flask.cli import pass_script_info
 from flask_debugtoolbar import DebugToolbarExtension
 from booking import database
 from booking import error_utils
@@ -19,6 +18,7 @@ import stripe
 from stripe import SignatureVerificationError
 from booking import stripe_integration
 from booking import mailchimp_integration
+from pprint import pprint
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +37,8 @@ app = create_app()
 app.debug=True
 
 # Static Stripe price-id's (short-term fix):
-STRIPE_PRICE_IDS = {"coaching_call": "price_1R6LuhH8d4CYhArR8yogdHvb"}
+STRIPE_PRICE_IDS = {"coaching_call": "price_1R6LuhH8d4CYhArR8yogdHvb",
+                    "salary_guide": "price_1R91kAH8d4CYhArRjcIkKXvy"}
 
 # Use decorator to create g.db instance within request context window for functions that require it to conserve resources
 def instantiate_database(f):
@@ -64,9 +65,9 @@ def get_about():
     return render_template('about.html')
 
 # General overview of each service provided and provide links to book coaching calls/purchase products
-@app.route("/services")
-def get_services():
-    return render_template('services.html')
+@app.route("/resources")
+def get_resources():
+    return render_template('resources.html')
 
 # General contact page. Should include address for company and contact information to include an email.
 # Also include a contact me form submisson for general inquiries
@@ -152,6 +153,7 @@ def pick_coaching_call():
 @app.route("/booking/coaching/purchase", methods=["POST"])
 def purchase_coaching_call():
     # Google API requires the 'T':
+    # Need to verify query params are clean before passing
     selected_datetime_utc = request.form['selected_datetime_utc'].replace(' ', 'T')
     booking_name = request.form['booking_name']
     booking_email = request.form['booking_email']
@@ -188,6 +190,8 @@ def booking_confirmation():
 
 @app.template_filter('parse_confirmation_data')
 def parse_confirmation_data(data):
+    if not data['customer_info']:
+        data['customer_info'] = 'friend'
     thank_you = f"Thank you for your purchase, {data['customer_info']}!\nYou will receive an email with the meeting details. If you have any questions please reach out to contact@hrsuitespot.com"
     return thank_you
 
@@ -214,10 +218,10 @@ def create_checkout_session():
     # Get query parameters
     checkout_type = request.args.get("checkout_type")
     price_id = STRIPE_PRICE_IDS[checkout_type]
-    amount = int(request.args.get("checkout_amount"))
+    amount = int(request.args.get("checkout_amount")) # This is a quantity, not price. Required
     # Not all customer info query params may exist, depends on purchase being made
     customer_info = {
-        "checkout_type": checkout_type,
+        "checkout_type": checkout_type, # Required
         "booking_name": request.args.get("booking_name", ""), 
         "booking_email": request.args.get("booking_email", ""), "selected_datetime_utc": request.args.get("selected_datetime_utc", ""),
         }
@@ -326,18 +330,27 @@ def fulfill_checkout(event, db) -> bool:
             case 'coaching_call':
                 # Function returns meeting event_states
                 event_states = book_coaching_call(db, customer_info.get('selected_datetime_utc'), customer_info.get('booking_name'), customer_info.get('booking_email'), client_ref_id)
+                if event_states.get('status') == 'confirmed':
+                    return True
+                return False
+            case 'salary_guide':
+                state = submit_to_mailchimp(customer_info.get('booking_email'), 'salary_guide', client_ref_id)
+                if not state:
+                    logger.error(f'Error occurred fulfilling salary guide via mailchimp. client_ref_id: {client_ref_id}')
+                    return False
                 return True
-            case 'resume_guide':
-                pass
             case _:
                 return False
-    logger.info(f"Fulfillment_status: {fulfillment_status}. Skipping fulfillment")
+    logger.info(f"Already fulfilled. Fulfillment_status: {fulfillment_status}. Skipping fulfillment")
     return False
 
 @app.route('/success')
 def checkout_success():
-    return render_template('booking_confirmation.html', confirmation_data=request.args)
+    checkout_email = request.args.get('user_email')
+    journey_tag = request.args.get('product_subscription')
+    return render_template('confirmation.html', confirmation_data=request.args)
 
+# Need to figure out how to guard this route as well
 @app.route('/return', methods=['GET'])
 @instantiate_database
 def checkout_return():
@@ -356,13 +369,15 @@ def checkout_return():
     
     if session.status == 'complete' and session.payment_status == 'paid':
         customer_name = session.metadata.get('booking_name')
+        customer_email = session.customer_email
+        checkout_type = session.metadata.get('checkout_type')
         # Storage of reference to purchase will happen in fulfillment function to avoid duplicate database connection with successful payments
         fulfillment_status = fulfill_checkout(session, g.db)
         logger.info(f"Stripe processor success: payment_stauts: {session.payment_status}, fulfillment status: {fulfillment_status}")
-        # Still need to handle and pass event states for successs page
-        return redirect(url_for('checkout_success', customer_info=customer_name))
+        # Still need to handle and pass event states for successs page, not just customer name
+        return redirect(url_for('checkout_success', customer_info=customer_name, user_email=customer_email, product_subscription=checkout_type))
     
-    # General failure for unknown reason
+    # General failure for unknown reason, insert the fulfillment locally for reference
     g.db.insert_fulfillment(client_ref_id, meta_data_as_json, False)
     logger.error(f"Stripe processor error: payment_stauts: {session.payment_status}, fulfillment status: {fulfillment_status}")
     flash("An error occurred. Please try again.", "error")
@@ -375,11 +390,21 @@ def checkout():
 # Route for GET subscrbe pages
 
 @app.route("/subscribe", methods=['POST'])
-def submit_to_mailchimp():
+def mailchimp_handler():
     # Get the email and product type being subscribed to, if any, from the args passed
-    user_email = request.args.get('user_email')
+    user_email = request.form.get('user_email')
+    pprint(user_email)
     # Right now, this can only be for resume guide or Q&A guide. The salary negotiation guide, since it's a purchase, will be submitted without a tag. Someone just subscribing to mailing list will be submitted with no tag.
-    journey_tag = request.args.get('product_subscription', '')
+    journey_tag = request.form.get('product_subscription', '')
+    pprint(journey_tag)
+    submission_status = submit_to_mailchimp(user_email, 'Free Resource', journey_tag)
+    if not submission_status: 
+        flash('An error occurred. Please try again', 'error')
+        return redirect('/resources')
+    flash('Success! Thanks for subscribing.', 'success')
+    return redirect('/resources')
+
+def submit_to_mailchimp(user_email, client_ref_id, journey_tag=None):
     submission_status = None
     try:
         mailchimp = mailchimp_integration.MailChimpIntegration()
@@ -387,15 +412,13 @@ def submit_to_mailchimp():
             submission_status = mailchimp.submit_member_to_mailchimp(user_email, journey_tag)
         else:
             submission_status = mailchimp.submit_member_to_mailchimp(user_email)
-    except Exception:
-        logger.error('An error occurred during MailChimp submission. Inspect logs.')
-        flash('An error occurred. Please try again')
-        return redirect(request.path)
+    except Exception as e:
+        logger.error(f'An error occurred during MailChimp submission: {e.args}. Inspect logs. Associated client_ref_id: {client_ref_id}')
+        return False
     if submission_status:
-        flash('Success! Thanks for subscribing.', 'success')
-        return redirect(request.path)
-    flash('An error occurred. Please try again.', 'error')
-    return redirect(request.path)
+        return True
+    logger.error(f'MailChimp submission returned false. Inspect logs. Associated client_ref_id: {client_ref_id}')
+    return False
 
 # Add resume route
 
