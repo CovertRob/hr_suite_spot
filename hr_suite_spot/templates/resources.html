@@ -1,0 +1,40 @@
+{% extends 'layout_2.html' %}
+
+{% block content %}
+
+<section id="sbs-2180">
+    <div class="cs-container">
+        <div class="cs-content">
+            <form id="resume-form" method="POST" action="/subscribe">
+                <h2>Resume</h2>
+                <span>Enter email for free resume guide</span>
+                <label> Email:
+                    <input type="text" id="resume_guide" name="resume_guide" placeholder="first.last@gmail.com" required>
+                </label>
+                <button type="submit">Submit</button>
+            </form>
+            <form id="interview-form" method="POST" action="/subscribe">
+                <h2>Interviews</h2>
+                <span>Enter email for free Interview Q&A guide</span>
+                <label> Email:
+                    <input type="text" id="interview_guide" name="user_email" placeholder="first.last@gmail.com" required>
+                    <input type="hidden" name="product_subscription" value="interview_guide">
+                </label>
+                <button type="submit">Submit</button>
+            </form>
+            <h2>Career Path Coaching</h2>
+                <label> Click here to book a coaching call:
+                    <a href="/booking/coaching" class="">
+                        Book
+                    </a>
+                </label>
+            <h2>Salary Negotiation</h2>
+                <label> Click here to purchase my salary negotiation guide:
+                    <a href="/checkout?checkout_type=salary_guide&checkout_amount=1" class="">
+                        Book
+                    </a>
+                </label>
+    </div>
+</section>
+    
+{% endblock %}
