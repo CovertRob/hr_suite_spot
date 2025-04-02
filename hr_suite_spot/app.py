@@ -340,7 +340,8 @@ def fulfill_checkout(event, db) -> bool:
                     return True
                 return False
             case 'salary_guide':
-                state = submit_to_mailchimp(customer_info.get('booking_email'), 'salary_guide', client_ref_id)
+                customer_email = checkout_session.get('customer_details').get('email')
+                state = submit_to_mailchimp(customer_email, client_ref_id, 'salary_guide')
                 if not state:
                     logger.error(f'Error occurred fulfilling salary guide via mailchimp. client_ref_id: {client_ref_id}')
                     return False
@@ -394,10 +395,8 @@ def checkout():
 def mailchimp_handler():
     # Get the email and product type being subscribed to, if any, from the args passed
     user_email = request.form.get('user_email')
-    pprint(user_email)
     # Right now, this can only be for resume guide or Q&A guide. The salary negotiation guide, since it's a purchase, will be submitted without a tag. Someone just subscribing to mailing list will be submitted with no tag.
     journey_tag = request.form.get('product_subscription', '')
-    pprint(journey_tag)
     submission_status = submit_to_mailchimp(user_email, 'Free Resource', journey_tag)
     if not submission_status: 
         flash('An error occurred. Please try again', 'error')
