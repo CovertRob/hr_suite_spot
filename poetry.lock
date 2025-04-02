@@ -196,6 +196,20 @@ files = [
 flask = ">=2.3.0"
 
 [[package]]
+name = "flask-httpauth"
+version = "4.8.0"
+description = "HTTP authentication for Flask routes"
+optional = false
+python-versions = "*"
+files = [
+    {file = "Flask-HTTPAuth-4.8.0.tar.gz", hash = "sha256:66568a05bc73942c65f1e2201ae746295816dc009edd84b482c44c758d75097a"},
+    {file = "Flask_HTTPAuth-4.8.0-py3-none-any.whl", hash = "sha256:a58fedd09989b9975448eef04806b096a3964a7feeebc0a78831ff55685b62b0"},
+]
+
+[package.dependencies]
+flask = "*"
+
+[[package]]
 name = "google-api-core"
 version = "2.24.0"
 description = "Google API client core library"
@@ -719,4 +733,4 @@ watchdog = ["watchdog (>=2.3)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "8c83d1729217d81948dcd08536fccb0c325d621ef6c05b6d39d7edf3f8ec2836"
+content-hash = "748a5013e2d4c0f929753d9bafa82dbb328c947582abf3916cea2d2ab9646314"
