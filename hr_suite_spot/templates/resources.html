@@ -9,7 +9,8 @@
                 <h2>Resume</h2>
                 <span>Enter email for free resume guide</span>
                 <label> Email:
-                    <input type="text" id="resume_guide" name="resume_guide" placeholder="first.last@gmail.com" required>
+                    <input type="text" id="resume_guide" name="user_email" placeholder="first.last@gmail.com" required>
+                    <input type="hidden" name="product_subscription" value="resume_guide">
                 </label>
                 <button type="submit">Submit</button>
             </form>
@@ -36,5 +37,9 @@
                 </label>
     </div>
 </section>
+
+{% include "subscribe_template.html"%}
+{% include "quote_template.html" %}
+{% include "subscribe_template.html"%}
     
 {% endblock %}
