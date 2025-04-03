@@ -1,8 +1,8 @@
 :root {
     /* Add these styles to your global stylesheet, which is used across all site pages. You only need to do this once. All elements in the library derive their variables and base styles from this central sheet, simplifying site-wide edits. For instance, if you want to modify how your h2's appear across the site, you just update it once in the global styles, and the changes apply everywhere. */
-    --primary: #f29E44;
-    --primaryLight: #f29E44;
-    --secondary: #f29E44;
+    --primary: #f29E44; /* Orange */
+    --primaryDark: #E1801A;
+    --secondary: #f4CA99; /* tan */
     --secondaryLight: #f29E44;
     --headerColor: #1a1a1a;
     --bodyTextColor: #4e4b66;
@@ -13,7 +13,7 @@
     --headerFontSize: clamp(1.9375rem, 3.9vw, 3.0625rem);
     --bodyFontSize: 1rem;
     /* 60px - 100px top and bottom */
-    --sectionPadding: clamp(3.75rem, 7.82vw, 6.25rem) 1rem;
+    --sectionPadding: clamp(3.75rem, 7.82vw, 6.25rem) 1rem 3rem 1rem;
 }
 
 body {

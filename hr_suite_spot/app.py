@@ -69,7 +69,7 @@ def home():
 def index():
     title = "HR Suite Spot"
     # return render_template('index_2.html', title = title)
-    return render_template('test.html', title = title)
+    return render_template('index_2.html', title = title)
 
 # Description page about User
 @app.route("/about")
