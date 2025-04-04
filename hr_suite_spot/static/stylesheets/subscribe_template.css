@@ -159,9 +159,11 @@
   }
   /* Desktop - 1024px */
   @media only screen and (min-width: 64rem) {
+
     #subscribe-1719 .cs-content {
       /* remove the positioning so the cs-floater is now absolutely positioned to the nearest parent that has a declared position relative, which is the section parent */
       position: initial;
+      padding-top: 10rem;
     }
     #subscribe-1719 .cs-form {
       flex-direction: row;

@@ -1,0 +1,124 @@
+/* ------------------------------------------ */
+/*               Base Styling                */
+/* ------------------------------------------ */
+
+.wrapper {
+    background-color: var(--secondary);
+}
+
+.sbs-content-box {
+    /* Minimal vertical spacing so boxes are closer together */
+    padding: 1rem 0.5rem;
+    /* You can tweak this if you want a little horizontal margin */
+}
+  
+.sbs-content-box .cs-container {
+    display: flex;
+    flex-direction: column; /* stack on mobile */
+    gap: 1rem;             /* small gap between image & text */
+}
+  
+.sbs-content-box .cs-content {
+    /* text-align left, but you could center if desired */
+    text-align: center;
+    align-items: center;
+}
+  
+.sbs-content-box .cs-title {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+  
+.sbs-content-box .cs-text {
+    margin: 0 0 1rem 0;
+    line-height: 1.4;
+}
+  
+.sbs-content-box .cs-button-solid {
+    display: inline-block; /* only as wide as its content */
+    width: fit-content;
+    font-size: 1rem;
+    line-height: 1.2;
+    font-weight: 700;
+    text-align: center;
+    color: #fff;
+    background-color: var(--primary);
+    padding: 0.75rem 1.25rem;
+    border-radius: 0.25rem;
+    text-decoration: none;
+}
+  
+/* Picture styles */
+.sbs-content-box .cs-picture {
+    width: 100%;
+    position: relative;
+    /* On mobile, let the image auto-size.
+       If needed, set a height with clamp() to reduce mobile height */
+}
+  
+.sbs-content-box .cs-picture img {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 75%;
+    object-fit:cover; /* shows the entire image without cropping */
+    border-radius: 0.5rem;
+}
+
+.sbs-content-box:first-of-type {
+    padding-top: 10rem; /* adjust as needed */
+}
+
+  
+  
+/* ------------------------------------------ */
+/*         Tablet & Desktop (48rem+)         */
+/* ------------------------------------------ */
+@media only screen and (min-width: 48rem) {
+    .sbs-content-box {
+        /* Slightly smaller vertical padding on larger screens
+           to keep boxes close */
+        padding: 0.5rem 1rem;
+        max-width: 1200px; /* limit overall width if desired */
+        margin: 0 auto;    /* center the boxes horizontally in the page */
+    }
+  
+    .sbs-content-box .cs-container {
+        flex-direction: row;
+        align-items: center;
+        gap: 1.5rem; /* space between image & text on bigger screens */
+    }
+  
+    /* By default, .left-image has the image first in the HTML,
+       so no additional styling needed */
+  
+    /* For .right-image, reverse the flex order so the image is on the right */
+    .sbs-content-box.right-image .cs-container {
+        flex-direction: row-reverse;
+    }
+  
+    /* Let the picture and text share the horizontal space */
+    .sbs-content-box .cs-picture,
+    .sbs-content-box .cs-content {
+        text-align: center;
+        width: 25%; /* adjust if you want a different balance */
+    }
+
+    .sbs-content-box .cs-picture img {
+        max-height: 40vh;
+        border-radius: 1rem;
+    }
+
+    .sbs-content-box .cs-content {
+        width: 30%;
+        
+    }
+  
+    /* Ensure the text block is centered vertically */
+    .sbs-content-box .cs-content {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+}

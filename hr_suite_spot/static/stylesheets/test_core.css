@@ -57,4 +57,24 @@ body {
     margin: 0;
     color: var(--bodyTextColor);
 }
+
+.flash.error {
+    position: absolute;
+    top: 1rem;
+    left: 35%;
+    width: auto;
+    text-align: center;
+    color: #ff6633;
+    background: #FFCFBF;
+  }
+
+  .flash.success {
+    position: absolute;
+    top: 1rem;
+    left: 35%;
+    width: auto;
+    text-align: center;
+    color: #33cc99;
+    background: #CBF2E5;
+  }
             

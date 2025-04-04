@@ -1,0 +1,164 @@
+/*-- -------------------------- -->
+<---          Footer            -->
+<--- -------------------------- -*/
+
+/* Mobile - 360px */
+@media only screen and (min-width: 0rem) {
+    #cs-footer-274 {
+        padding: var(--sectionPadding);
+        padding-top: 1rem;
+        margin-top: 1rem;
+        /* Navigation Links */
+        /* border-top: .125rem solid black; */
+    }
+    #cs-footer-274 .cs-container {
+        width: 100%;
+        /* reset on tablet */
+        max-width: 34.375rem;
+        margin: auto;
+        display: flex;
+        justify-content: flex-start;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        column-gap: 5.5rem;
+        row-gap: 2rem;
+    }
+    #cs-footer-274 .cs-logo-group {
+        /* takes up all the space, lets the other ul's wrap below it */
+        width: 100%;
+        position: relative;
+        align-items: center;
+    }
+    #cs-footer-274 .cs-logo-group {
+        /* 44px - 52px */
+        margin-bottom: clamp(2.75rem, 6.8vw, 3.25rem);
+    }
+    #cs-footer-274 .cs-logo {
+        /* 210px - 240px */
+        width: clamp(13.125rem, 8vw, 15rem);
+        height: auto;
+        display: block;
+    }
+    #cs-footer-274 .cs-logo-img {
+        width: 100%;
+        height: auto;
+    }
+    #cs-footer-274 .cs-social {
+        display: inline-flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        gap: 0.75rem;
+        position: absolute;
+        top: 0;
+        right: 0;
+    }
+    #cs-footer-274 .cs-social-link {
+        width: 1.5rem;
+        height: 1.5rem;
+        background-color: #4e4b66;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+        z-index: 1;
+        transition:
+            transform 0.3s,
+            background-color 0.3s;
+    }
+    #cs-footer-274 .cs-social-link:hover {
+        background-color: var(--primary);
+        transform: translateY(-0.1875rem);
+    }
+    #cs-footer-274 .cs-social-img {
+        height: 0.8125rem;
+        width: auto;
+        display: block;
+    }
+    #cs-footer-274 .cs-nav {
+        padding: 0;
+        margin: 0;
+    }
+    #cs-footer-274 .cs-nav-li {
+        list-style: none;
+        margin: 0;
+        color: var(--bodyTextColor);
+    }
+    #cs-footer-274 .cs-header {
+        font-size: 1rem;
+        line-height: 1.5em;
+        font-weight: 700;
+        /* 16px - 20px */
+        margin-bottom: clamp(1rem, 2.7vw, 1.25rem);
+        color: var(--bodyTextColor);
+        position: relative;
+        display: block;
+    }
+    #cs-footer-274 .cs-nav-link {
+        font-size: 1rem;
+        text-decoration: none;
+        line-height: 1.5em;
+        color: var(--bodyTextColor);
+        position: relative;
+    }
+    #cs-footer-274 .cs-nav-link:before {
+        /* underline */
+        content: "";
+        width: 0%;
+        height: 0.125rem;
+        background: var(--bodyTextColor);
+        opacity: 1;
+        position: absolute;
+        display: block;
+        bottom: -0.125rem;
+        left: 0;
+        transition: width 0.3s;
+    }
+    #cs-footer-274 .cs-nav-link:hover:before {
+        width: 100%;
+    }
+}
+/* Tablet - 768px */
+@media only screen and (min-width: 48rem) {
+    #cs-footer-274 .cs-container {
+        max-width: 80rem;
+        row-gap: 0;
+        /* 44px - 88px */
+        column-gap: clamp(2.75rem, calc(6%), 5.5rem);
+    }
+    #cs-footer-274 .cs-logo-group {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    #cs-footer-274 .cs-social {
+        flex-direction: row;
+        position: relative;
+        top: auto;
+        right: auto;
+    }
+}
+/* Small Desktop - 1024px */
+@media only screen and (min-width: 64rem) {
+    #cs-footer-274 .cs-container {
+        padding-top: 4rem;
+        justify-content: flex-end;
+        
+    }
+    #cs-footer-274 .cs-logo-group {
+        width: auto;
+        margin: 0;
+        /* pushes the rest of the content to the right in a flexbox */
+        margin-right: auto;
+        flex-direction: column;
+        align-items: center;
+    }
+    #cs-footer-274 .cs-logo-img {
+        margin-bottom: 2.75rem;
+    }
+    #cs-footer-274 .cs-nav {
+        margin-top: 0.75rem;
+    }
+}
+
+                                
