@@ -2,11 +2,66 @@
 
 {% block content %}
 
-<section id="hero-1946">
+<!-- ============================================ -->
+<!--                Contact Form                  -->
+<!-- ============================================ -->
+
+<link rel="stylesheet" href="{{ url_for('static', filename='stylesheets/contact_page.css') }}">
+
+<section id="cs-contact-490">
     <div class="cs-container">
+        <!-- Contact Info -->
         <div class="cs-content">
-           <p>Socials</p>
+            <span class="cs-topper">Contact Jasmin</span>
+            <h2 class="cs-title">Contact Information</h2>
+            <p class="cs-text">
+                If you have any questions regarding an order or just want to say hi, please fill out the form and I'll be in touch!
+            </p>
+            
+            <!--Address-->
+            <span class="cs-header">Address</span>
+            <a href="" class="cs-link">
+                San Diego, CA
+            </a>
+            <!--Email-->
+            <span class="cs-header">Email</span>
+            <a href="mailto:contact@hrsuitespot.com" class="cs-link">contact@hrsuitespot.com</a>
+            <!--Phone-->
+            <span class="cs-header">Phone</span>
+            <a href="tel:425-686-9566" class="cs-link">(619) 268-1012</a>
+
+            <!--Social Buttons-->
+            <div class="cs-social">
+                <a class="cs-social-link" aria-label="visit facebook profile" href="https://www.facebook.com/profile.php?id=61558438710865">
+                    <img class="cs-social-img" aria-hidden="true" loading="lazy" decoding="async" src="https://csimg.nyc3.digitaloceanspaces.com/Social/Facebook.svg" alt="facebook" width="6" height="11">
+                </a>
+                <a class="cs-social-link" aria-label="visit instagram profile" href="instagram.com/hrsuitespot">
+                    <img class="cs-social-img" aria-hidden="true" loading="lazy" decoding="async" src="https://csimg.nyc3.digitaloceanspaces.com/Social/instagram.svg" alt="instagram" width="11" height="11">
+                </a>
+            </div>
+        </div>
+        <!-- Form -->
+        <form id="cs-form-490" name="Contact Form" method="post" action="/submit-contact-form">
+            <label class="cs-label">
+                Name
+                <input class="cs-input" required type="text" id="name-490" name="name" placeholder="John/Jane Doe">
+            </label>
+            <label class="cs-label">
+                Email
+                <input class="cs-input" required type="text" id="email-490" name="email" placeholder="name@company.com">
+            </label>
+            <label class="cs-label">
+                Phone
+                <input class="cs-input" required type="text" id="phone-490" name="phone" placeholder="+1 (206) 987-6543">
+            </label>
+            <!--Remove how did you find us form entry-->
+            <label class="cs-label-message">
+                Message
+                <textarea class="cs-input" required name="Message" id="message-490" placeholder="Hello, I’m interested in..."></textarea>
+            </label>
+            <button class="cs-button-solid" type="submit">Submit Message Now</button>
+        </form>
     </div>
 </section>
-    
+{% include 'footer.html' %}        
 {% endblock %}

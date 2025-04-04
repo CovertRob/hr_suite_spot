@@ -1,45 +1,113 @@
 {% extends 'layout_2.html' %}
-
 {% block content %}
 
-<section id="sbs-2180">
-    <div class="cs-container">
-        <div class="cs-content">
-            <form id="resume-form" method="POST" action="/subscribe">
-                <h2>Resume</h2>
-                <span>Enter email for free resume guide</span>
-                <label> Email:
-                    <input type="text" id="resume_guide" name="user_email" placeholder="first.last@gmail.com" required>
-                    <input type="hidden" name="product_subscription" value="resume_guide">
-                </label>
-                <button type="submit">Submit</button>
-            </form>
-            <form id="interview-form" method="POST" action="/subscribe">
-                <h2>Interviews</h2>
-                <span>Enter email for free Interview Q&A guide</span>
-                <label> Email:
-                    <input type="text" id="interview_guide" name="user_email" placeholder="first.last@gmail.com" required>
-                    <input type="hidden" name="product_subscription" value="interview_guide">
-                </label>
-                <button type="submit">Submit</button>
-            </form>
-            <h2>Career Path Coaching</h2>
-                <label> Click here to book a coaching call:
-                    <a href="/booking/coaching" class="">
-                        Book
-                    </a>
-                </label>
-            <h2>Salary Negotiation</h2>
-                <label> Click here to purchase my salary negotiation guide:
-                    <a href="/checkout?checkout_type=salary_guide&checkout_amount=1" class="">
-                        Book
-                    </a>
-                </label>
+<link rel="stylesheet" href="{{ url_for('static', filename='stylesheets/resources.css') }}">
+<div class="wrapper">
+<!-- First Box: image on LEFT -->
+<section class="sbs-content-box left-image">
+  <div class="cs-container">
+    <picture class="cs-picture">
+      <source media="(max-width: 600px)" srcset="{{ url_for('static', filename='images/WEBsize-24.jpg') }}">
+      <source media="(min-width: 601px)" srcset="{{ url_for('static', filename='images/WEBsize-24.jpg') }}">
+      <img 
+        loading="lazy" 
+        decoding="async" 
+        src="{{ url_for('static', filename='images/WEBsize-24.jpg') }}" 
+        alt="woman reading" 
+      >
+    </picture>
+    <div class="cs-content">
+      <h2 class="cs-title">The Job Search Checklist</h2>
+      <p class="cs-text">
+        My FREE gift to help you take charge of your job search. Tired of feeling overwhelmed applying to multiple jobs? I gotchu girl.
+      </p>
+      <p class="cs-text">
+        Grab your FREE checklist below that will help you get clarity on managing your job search.
+      </p>
+      <a href="/subscribe/Job%20Search%20Checklist" class="cs-button-solid">Send It To Me</a>
     </div>
+  </div>
 </section>
 
-{% include "subscribe_template.html"%}
-{% include "quote_template.html" %}
-{% include "subscribe_template.html"%}
-    
+<!-- Second Box: image on RIGHT -->
+<section class="sbs-content-box right-image">
+  <div class="cs-container">
+    <picture class="cs-picture">
+      <source media="(max-width: 600px)" srcset="{{ url_for('static', filename='images/WEBsize-6_edit1.jpg') }}">
+      <source media="(min-width: 601px)" srcset="{{ url_for('static', filename='images/WEBsize-6_edit1.jpg') }}">
+      <img 
+        loading="lazy" 
+        decoding="async" 
+        src="{{ url_for('static', filename='images/WEBsize-6_edit1.jpg') }}" 
+        alt="woman in dress" 
+      >
+    </picture>
+    <div class="cs-content">
+      <h2 class="cs-title">The Resume Guide</h2>
+      <p class="cs-text">
+        If preparing a resume has been stressing you out, I'm here to make it easier.
+      </p>
+      <p class="cs-text">
+        Download the resume guide below to help you create a resume that highlights your strengths.
+      </p>
+      <a href="/subscribe/Resume%20Guide" class="cs-button-solid">Send It To Me</a>
+    </div>
+  </div>
+</section>
+<!-- First Box: image on LEFT -->
+<section class="sbs-content-box left-image">
+    <div class="cs-container">
+      <picture class="cs-picture">
+        <source media="(max-width: 600px)" srcset="{{ url_for('static', filename='images/WEBsize-2.jpg') }}">
+        <source media="(min-width: 601px)" srcset="{{ url_for('static', filename='images/WEBsize-2.jpg') }}">
+        <img 
+          loading="lazy" 
+          decoding="async" 
+          src="{{ url_for('static', filename='images/WEBsize-2.jpg') }}" 
+          alt="woman reading" 
+        >
+      </picture>
+      <div class="cs-content">
+        <h2 class="cs-title">The Interview Q&A Guide</h2>
+        <p class="cs-text">
+            Take Control of Your Interview Preparation!
+            Are you stressed about how to answer tough interview questions?
+            Let me help! 
+        </p>
+        <p class="cs-text">
+            Grab the interview Q&A guide below to get the clarity and
+            confidence in your answers! 👇🏻
+        </p>
+        <a href="/subscribe/Interview%20Q&A%20Guide" class="cs-button-solid">Send It To Me</a>
+      </div>
+    </div>
+  </section>
+  
+  <!-- Second Box: image on RIGHT -->
+  <section class="sbs-content-box right-image">
+    <div class="cs-container">
+      <picture class="cs-picture">
+        <source media="(max-width: 600px)" srcset="{{ url_for('static', filename='images/WEBsize-5.jpg') }}">
+        <source media="(min-width: 601px)" srcset="{{ url_for('static', filename='images/WEBsize-5.jpg') }}">
+        <img 
+          loading="lazy" 
+          decoding="async" 
+          src="{{ url_for('static', filename='images/WEBsize-5.jpg') }}" 
+          alt="woman in dress" 
+        >
+      </picture>
+      <div class="cs-content">
+        <h2 class="cs-title">The Salary Negotiation Guide</h2>
+        <p class="cs-text">
+          Do you want to make more money at your job? Here's how you do it!
+        </p>
+        <p class="cs-text">
+          Purchase the guide for just $4.99 and I'll step you through exactly how to do it.
+        </p>
+        <a href="/checkout?checkout_type=salary_guide&checkout_amount=1" class="cs-button-solid">Purchase</a>
+      </div>
+    </div>
+  </section>
+</div>
+  {% include 'footer.html' %}
 {% endblock %}
