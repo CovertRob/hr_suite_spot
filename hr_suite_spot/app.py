@@ -3,7 +3,7 @@ import json
 import logging
 import os
 from uuid import UUID, uuid4
-from flask import Flask, render_template, request, flash, redirect, g, url_for, jsonify
+from flask import Flask, abort, render_template, request, flash, redirect, g, url_for, jsonify
 import secrets
 from flask_debugtoolbar import DebugToolbarExtension
 from booking import database
@@ -21,6 +21,8 @@ from booking import mailchimp_integration
 from pprint import pprint
 from flask_httpauth import HTTPBasicAuth
 from werkzeug.security import generate_password_hash, check_password_hash
+from booking import gmail
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +41,8 @@ app = create_app()
 app.debug=True
 auth = HTTPBasicAuth()
 
+
+# Must set this in prod
 users = {
     "admin": generate_password_hash('secret')
 }
@@ -89,7 +93,6 @@ def get_contact():
 
 
 # Admin page for user to submit their availability to the system for appointments to be booked against.
-# Future - add authentication protection to route
 @app.route("/calendar-availability", methods=['GET'])
 @auth.login_required
 def get_calendar():
@@ -97,6 +100,7 @@ def get_calendar():
     return render_template('calendar.html', days_of_week=days_of_week)
 
 # This route only to be used by admin
+# Look into protecting with secret key
 @app.route("/calendar", methods=["POST"])
 @instantiate_database
 def submit_availability():
@@ -148,6 +152,8 @@ def submit_availability():
         return redirect('/calendar-availability')
     return redirect('/calendar-availability')
 
+
+# Placeholder for future admin functionality
 @app.route("/calendar/clear/<date>", methods=['POST'])
 @instantiate_database
 def clear_date_availability(date):
@@ -195,11 +201,11 @@ def book_coaching_call(db, datetime_utc: str, booking_name: str, booking_email: 
     # Return response object to indicate booking was successful
     return meeting.event_states
 
-
-@app.route('/coaching/submit-appointment/success/', methods=['GET'])
-def booking_confirmation():
-    event_url = request.args.get('event_states')
-    return render_template('booking_confirmation.html', confirmation_data=event_url)
+# Possibly delete
+# @app.route('/coaching/submit-appointment/success/', methods=['GET'])
+# def booking_confirmation():
+#     event_url = request.args.get('event_states')
+#     return render_template('booking_confirmation.html', confirmation_data=event_url)
 
 @app.errorhandler(404)
 def error_handler(error):
@@ -351,6 +357,7 @@ def fulfill_checkout(event, db) -> bool:
     logger.info(f"Already fulfilled. Fulfillment_status: {fulfillment_status}. Skipping fulfillment")
     return False
 
+# Used to to render confirmation page after a successful checkout session
 @app.route('/success')
 def checkout_success():
     return render_template('confirmation.html')
@@ -420,11 +427,34 @@ def submit_to_mailchimp(user_email, client_ref_id, journey_tag=None):
     logger.error(f'MailChimp submission returned false. Inspect logs. Associated client_ref_id: {client_ref_id}')
     return False
 
-# Add resume route
+@app.route('/submit-contact-form', methods=['POST'])
+def submit_contact_form():
+    email = request.form.get('email', '').strip()
+    phone = request.form.get('phone', '').strip()
 
-# Add Interview route
+    if not re.match("^[^@]+@[^@]+\.[^@]+$", email):
+         flash('Email contains disallowed symbols', 'error')
+         return redirect(url_for('get_contact'))
+    
+    name = request.form.get('name', '').strip()
+    message = request.form.get('Message', '').strip()
 
-# Add Career Path route
+    if not name or not email or not message:
+        flash('Name, email, and message are required', 'error')
+        return redirect(url_for('get_contact'))
+    
+    if len(message) > 5000:
+        flash('Message is too big.', 'error')
+        return redirect(url_for('get_contact'))
+    
+    gmail_service = gmail.GmailIntegration()
+    return_message = gmail_service.send_email(name, email, message, phone)
+    logger.info(f"{return_message}")
+    return redirect(url_for('get_contact'))
+
+@app.route("/subscribe/<product>", methods=['GET'])
+def render_product_subscription(product):
+    return render_template('subscribe_template.html', product_type=product)
 
 if __name__ == '__main__':
     # production
