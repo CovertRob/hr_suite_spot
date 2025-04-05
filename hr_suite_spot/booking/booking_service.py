@@ -13,7 +13,7 @@ import json
 logger = logging.getLogger(__name__)
 
 # The email of the business user you are impersonating
-BUSINESS_EMAIL = "contact@hrsuitespot.com"
+BUSINESS_EMAIL = "noreply@hrsuitespot.com"
 
 # Define the required scope
 SCOPES = ["https://www.googleapis.com/auth/calendar"]
