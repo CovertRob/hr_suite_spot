@@ -12,9 +12,12 @@ from typing import Dict
 
 logger = logging.getLogger(__file__)
 
-MC_JOURNEYS = {'resume_guide': 'Resume Guide',
-               'salary_guide': 'Salary Guide',
-               'interview_guide': 'Interview Q&A Guide'} # Update this upon push to prod
+# Get journey's from here to put another layer between form injection and API
+MC_JOURNEYS = {'Resume Guide': 'Resume Guide',
+               'salary_guide': 'Salary Guide', # Paid
+               'Interview Q&A Guide': 'Interview Q&A Guide',
+               'Job Search Checklist': 'Job Search Checklist'} # Update this upon push to prod
+
 AUDIENCE_ID = '2b11290018' # This is a unique identifier for the list, will need to change for official HRSS audience upon push to prod
 
 # Current implementation: functions don't return response objects at this time. Won't catch the responses until caching is implemented.
@@ -48,7 +51,7 @@ class MailChimpIntegration:
         Store Stripe API key directly in environment variable for easy access.
         Otherwise, find via file name in local dev environment.
         """
-        api_key = os.getenv('STRIPE_API_KEY')
+        api_key = os.getenv('MAILCHIMP_API_KEY')
             # If none, then get local development key
         if not api_key:
             try:
