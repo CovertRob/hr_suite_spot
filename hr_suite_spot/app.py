@@ -3,25 +3,19 @@ import json
 import logging
 import os
 from uuid import UUID, uuid4
-from flask import Flask, abort, render_template, request, flash, redirect, g, url_for, jsonify
+from flask import Flask, render_template, request, flash, redirect, g, url_for, jsonify
 import secrets
 from flask_debugtoolbar import DebugToolbarExtension
-from booking import database
-from booking import error_utils
+from booking import database, error_utils, booking_service, stripe_integration, mailchimp_integration, gmail
 from booking import booking_utils as util
 from functools import wraps
 from werkzeug.datastructures import MultiDict
 from json import dumps
-from booking import booking_service
 from googleapiclient.http import HttpError
 import stripe
 from stripe import SignatureVerificationError
-from booking import stripe_integration
-from booking import mailchimp_integration
-from pprint import pprint
 from flask_httpauth import HTTPBasicAuth
 from werkzeug.security import generate_password_hash, check_password_hash
-from booking import gmail
 import re
 
 logger = logging.getLogger(__name__)
@@ -38,14 +32,23 @@ def create_app():
     return app
 
 app = create_app()
-app.debug=True
+# Set to make Flask debug toolbar work
+if not os.environ.get('FLASK_ENV') == 'production':
+    app.debug=True
 auth = HTTPBasicAuth()
 
 
 # Must set this in prod
-users = {
-    "admin": generate_password_hash('secret')
-}
+prod_hash = os.getenv('HASH_ADMIN')
+
+if prod_hash:
+    users = {
+        "admin": generate_password_hash(prod_hash)
+    }
+else: # For dev
+    users = {
+        "admin": generate_password_hash('secret')
+    }
 
 @auth.verify_password
 def verify_password(username, password):
@@ -53,10 +56,11 @@ def verify_password(username, password):
         return username
 
 # Static Stripe price-id's (short-term fix):
+# To add config file for this later
 STRIPE_PRICE_IDS = {"coaching_call": "price_1R6LuhH8d4CYhArR8yogdHvb",
                     "salary_guide": "price_1R91kAH8d4CYhArRjcIkKXvy"}
 
-# Use decorator to create g.db instance within request context window for functions that require it to conserve resources
+# Use decorator to create g.db instance within request context window for functions that require it to conserve resources and prevent N +1 instances
 def instantiate_database(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -181,6 +185,7 @@ def purchase_coaching_call():
     # Redirect to checkout session page with necessary params
     return redirect(url_for('checkout', booking_name=booking_name, booking_email=booking_email, checkout_type=checkout_type, checkout_amount=checkout_amount, selected_datetime_utc=selected_datetime_utc))
 
+# In future - allow people to submit message with their booking & upload docs
 def book_coaching_call(db, datetime_utc: str, booking_name: str, booking_email: str, client_ref_id: UUID):
     # Google API requires the 'T':
     start_time = datetime_utc.replace(' ', 'T')
@@ -200,12 +205,6 @@ def book_coaching_call(db, datetime_utc: str, booking_name: str, booking_email: 
             logger.error("Booking insertion  in db failed.")
     # Return response object to indicate booking was successful
     return meeting.event_states
-
-# Possibly delete
-# @app.route('/coaching/submit-appointment/success/', methods=['GET'])
-# def booking_confirmation():
-#     event_url = request.args.get('event_states')
-#     return render_template('booking_confirmation.html', confirmation_data=event_url)
 
 @app.errorhandler(404)
 def error_handler(error):
@@ -358,9 +357,11 @@ def fulfill_checkout(event, db) -> bool:
     return False
 
 # Used to to render confirmation page after a successful checkout session
+# Refactor to do actual confirmation pages in the future
 @app.route('/success')
 def checkout_success():
-    return render_template('confirmation.html')
+    flash("Thanks for your purchase! You'll receive an email with the details!", 'success')
+    return redirect(url_for('index'))
 
 # Need to figure out how to guard this route as well
 @app.route('/return', methods=['GET'])
@@ -407,9 +408,9 @@ def mailchimp_handler():
     submission_status = submit_to_mailchimp(user_email, 'Free Resource', journey_tag)
     if not submission_status: 
         flash('An error occurred. Please try again', 'error')
-        return redirect('/resources')
+        return redirect('/index')
     flash('Success! Thanks for subscribing.', 'success')
-    return redirect('/resources')
+    return redirect('/index')
 
 def submit_to_mailchimp(user_email, client_ref_id, journey_tag=None):
     submission_status = None
@@ -455,6 +456,10 @@ def submit_contact_form():
 @app.route("/subscribe/<product>", methods=['GET'])
 def render_product_subscription(product):
     return render_template('subscribe_template.html', product_type=product)
+
+@app.route("/coaching-call")
+def render_coaching_call():
+    return render_template('coaching_call.html')
 
 if __name__ == '__main__':
     # production
