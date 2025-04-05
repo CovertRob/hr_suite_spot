@@ -28,7 +28,7 @@
             <p class="cs-text">
                 With experience across 10+ industries, I bring a personalized touch to career coaching, making your professional growth fun and achievable. Whether it's refining resumes or strategizing your next career move, I'm here to support and guide you every step of the way.
             </p>
-            <a href="/resources" class="cs-button-solid">Learn More</a>
+            <a href="/coaching-call" class="cs-button-solid">Learn More</a>
             </div>
         </div>
     </div>
@@ -67,17 +67,17 @@
             <p class="dynamic text">
                 With expert tips and resources, I can help you turn your resume into a standout document that reflects your unique professional journey
             </p>
-            <a href="/resources" class="cs-button-solid dynamic">Learn More</a>
+            <a href="/subscribe/Resume%20Guide" class="cs-button-solid dynamic">Learn More</a>
             <h3 class="dynamic title">Ace Your Interviews</h3>
             <p class="dynamic text">
                 Master the art of interviews with my fun and effective strategies in my one-to-one coaching sessions
             </p>
-            <a href="/resources" class="cs-button-solid dynamic">Learn More</a>
+            <a href="/subscribe/Interview%20Q&A%20Guide" class="cs-button-solid dynamic">Learn More</a>
             <h3 class="dynamic title">Strategize Your Career Path</h3>
             <p class="dynamic text">
                 I&apos;ll help you navigate your career journey with personalized guidance and strategic planning
             </p>
-            <a href="/resources" class="cs-button-solid dynamic">Learn More</a>
+            <a href="/coaching-call" class="cs-button-solid dynamic">Learn More</a>
             <h3 class="dynamic title">Coming 2025</h3>
             <p class="dynamic text">
                 Get excited for our new product that will be coming out soon, it&apos;s designed specifically to help support your next steps in your job search, you won&apos;t want to miss it!
@@ -101,16 +101,45 @@
             <p class="dynamic text">
                 Book your session for personalized career advice.
             </p>
-            <a href="/resources" class="cs-button-solid dynamic">Learn More</a>
+            <a href="/coaching-call" class="cs-button-solid dynamic">Learn More</a>
             <h3 class="dynamic title">Join Our Community</h3>
             <p class="dynamic text">
                 Follow me on Instagram to join thousands of other young professionals building their career.
             </p>
-            <a href="/resources" class="cs-button-solid dynamic">Learn More</a>
+            <a href="instagram.com/hrsuitespot" class="cs-button-solid dynamic">Connect</a>
         </div>
     </div>
 </section>
 </div>
+<link rel="stylesheet" href="{{ url_for('static', filename='stylesheets/subscribe_template.css') }}">
+<section id="subscribe-1719">
+    <div class="cs-container">
+        <div class="cs-content">
+            <span class="cs-topper">Mailing List</span>
+            <h2 class="cs-title">Subscribe to stay up to date with my new resources!</h2>
+            <p class="cs-text">
+                By subsribing you'll be the first to hear when I release new free resources and webinars!
+            </p>
+            <form class="cs-form" name="Contact Form" method="post" action="/subscribe">
+                <input class="cs-input" type="email" id="cs-email-301-1719" name="user_email" placeholder="Email Address" required>
+                <button class="cs-button-solid cs-submit" type="submit">Subscribe</button>
+            </form>
+            <!--Graphic-->
+            <img class="cs-floater" loading="lazy" decoding="async" src="https://csimg.nyc3.cdn.digitaloceanspaces.com/Images/Graphics/white-spiral.svg" alt="graphic" width="1920" height="486" aria-hidden="true">
+        </div>
+    </div>
+    <!--Background Image-->
+    <picture class="cs-background">
+        <source media="(max-width: 600px)" srcset="{{ url_for('static', filename='images/WEBsize-15.jpg') }}">
+        <source media="(min-width: 601px)" srcset="{{ url_for('static', filename='images/WEBsize-15.jpg') }}">
+        <img 
+          loading="lazy" 
+          decoding="async" 
+          src="{{ url_for('static', filename='images/WEBsize-15.jpg') }}" 
+          alt="woman in dress" 
+        >
+      </picture>
+</section>
 <footer class="footer">
     <div class="footer-text">
     Are you ready to level up your career? You're in the right place. Let's work together to elevate your resume, sharpen your skills, and unlock new opportunities.

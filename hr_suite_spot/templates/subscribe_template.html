@@ -8,12 +8,13 @@
     <div class="cs-container">
         <div class="cs-content">
             <span class="cs-topper">{{ product_type }}</span>
-            <h2 class="cs-title">Subscribe To Receive my Free {{ product_type }}!</h2>
+            <h2 class="cs-title">Subscribe To Receive My Free {{ product_type }}!</h2>
             <p class="cs-text">
                 
             </p>
-            <form class="cs-form" name="Contact Form" method="post">
-                <input class="cs-input" type="email" id="cs-email-301-1719" name="find-us" placeholder="Email Address" required>
+            <form class="cs-form" name="Contact Form" method="post" action="/subscribe">
+                <input class="cs-input" type="email" id="cs-email-301-1719" name="user_email" placeholder="Email Address" required>
+                <input type="hidden" name="product_subscription" value="{{ product_type }}">
                 <button class="cs-button-solid cs-submit" type="submit">Subscribe</button>
             </form>
             <!--Graphic-->
