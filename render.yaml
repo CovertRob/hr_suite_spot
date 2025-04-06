@@ -1,0 +1,33 @@
+# IaC file for Render Blueprint
+previews:
+  generation: automatic
+services:
+- type: web
+  name: hr_suite_spot
+  runtime: python
+  repo: https://github.com/CovertRob/hr_suite_spot
+  plan: starter
+  envVars:
+  - key: DATABASE_URL
+    sync: false
+  - key: hr-suite-spot-8164bd363e86.json
+    sync: false
+  - key: SERVICE_ACCOUNT_FILE
+    sync: false
+  - key: STRIPE_API_KEY
+    sync: false
+  - key: MAILCHIMP_API_KEY
+    sync: false
+  - key: HASH_ADMIN
+    sync: false
+  - key: FLASK_ENV
+    sync: false
+  region: oregon
+  buildCommand: poetry install
+  startCommand: gunicorn hr_suite_spot.wsgi:app -b :$PORT
+  domains:
+  - www.hrsuitespot.com
+  - hrsuitespot.com
+  maintenanceMode:
+    enabled: true
+version: "1"
