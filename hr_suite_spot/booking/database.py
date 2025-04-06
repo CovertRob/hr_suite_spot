@@ -166,7 +166,19 @@ class DatabasePersistence:
                                    ('Friday'), ('Saturday'),
                                    ('Sunday');
                                 """)
-                
+                cursor.execute("""
+                    SELECT COUNT(*)
+                    FROM information_schema.tables
+                    WHERE table_schema = 'public' AND table_name = 'product_fulfillments';
+                """)
+                if cursor.fetchone()[0] == 0:
+                    cursor.execute("""CREATE TABLE product_fulfillments (
+                                id serial PRIMARY KEY NOT NULL,
+                                created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                                client_ref_id UUID UNIQUE NOT NULL,
+                                meta_data JSONB NOT NULL,
+                                is_fulfilled boolean DEFAULT false
+                                );""")
                 cursor.execute("""
                     SELECT COUNT(*)
                     FROM information_schema.tables
@@ -193,19 +205,6 @@ class DatabasePersistence:
                                    id serial PRIMARY KEY,
                                    availability_period_id integer NOT NULL REFERENCES availability_period (id));
                                    """)
-                cursor.execute("""
-                    SELECT COUNT(*)
-                    FROM information_schema.tables
-                    WHERE table_schema = 'public' AND table_name = 'product_fulfillments';
-                """)
-                if cursor.fetchone()[0] == 0:
-                    cursor.execute("""CREATE TABLE product_fulfillments (
-                                id serial PRIMARY KEY NOT NULL,
-                                created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-                                client_ref_id UUID UNIQUE NOT NULL,
-                                meta_data JSONB NOT NULL,
-                                is_fulfilled boolean DEFAULT false
-                                );""")
                 self._setup_availability_period_function(cursor)
                 self._setup_purchase_fulfillment_function(cursor)
                 self._setup_booking_to_fulfillment_trigger(cursor)
