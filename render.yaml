@@ -8,18 +8,7 @@ services:
   repo: https://github.com/CovertRob/hr_suite_spot
   plan: starter
   envVars:
-  - key: DATABASE_URL
-    sync: true
-  - key: SERVICE_ACCOUNT_FILE
-    sync: true
-  - key: STRIPE_API_KEY
-    sync: true
-  - key: MAILCHIMP_API_KEY
-    sync: true
-  - key: HASH_ADMIN
-    sync: true
-  - key: FLASK_ENV
-    sync: true
+  - fromGroup: Live HRSS ENV
   region: oregon
   buildCommand: poetry install
   startCommand: gunicorn hr_suite_spot.wsgi:app -b :$PORT
