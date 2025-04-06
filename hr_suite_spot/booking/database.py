@@ -70,9 +70,9 @@ class DatabasePersistence:
         with self._database_connect() as conn:
             with conn.cursor() as cursor:
                 # First, delete all availability present that is not currently booked for the days that are being overwritten
-                cursor.execute(clearing_query, (self._days_of_week_ids.get(f"{day_of_week}")))
                 
                 for day_of_week, appointments in availability.items(multi=True):
+                    cursor.execute(clearing_query, (self._days_of_week_ids.get(f"{day_of_week}")))
                     for slot in appointments:
                         begin_period, end_period = slot
                         # Use a try-catch to return false if any of the availability inserts fail so not to interrup user session
