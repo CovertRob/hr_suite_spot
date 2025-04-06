@@ -109,6 +109,7 @@ def get_calendar():
 @instantiate_database
 def submit_availability():
     days_of_week = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+    user_timezone = request.form.get('timezone')
     # Separate out availability period data so the "re-occurring" boolean values don't mess with time format validation functions
     availability_data = MultiDict()
     for k, v in request.form.items(multi=True):
@@ -131,7 +132,7 @@ def submit_availability():
     # Convert to official ISO-format with timezone info and verify no inputs in past. Currently hard-coded for -8 PST.
     # Use try-catch block with convert_to_iso_with_tz
     try:
-        converted_input = util.convert_to_iso_with_tz(generated_availability)
+        converted_input = util.convert_to_iso_with_tz(generated_availability, user_timezone)
     except error_utils.TimeValidationError as e:
         message = e.message # get the message passed
         flash(f"{message}", "error")
