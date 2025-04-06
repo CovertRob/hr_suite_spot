@@ -61,11 +61,16 @@ class DatabasePersistence:
 
         # To-do: Database needs to overwrite availability for a given day of the week when data is resubmitted by user
         
-        # Define query to insert parameters
-        query = "SELECT input_or_replace_availability(%s, %s, %s)"
+        # Define queries to insert parameters
+        # Insertion query
+        query = "INSERT INTO availability_period (begin_period, end_period, availability_day_id) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING;"
+        # Clearing query
+        clearing_query = "DELETE FROM availability_period WHERE is_booked = FALSE;"
         logger.info("Executing query: %s", query)
         with self._database_connect() as conn:
             with conn.cursor() as cursor:
+                # First, delete all availability present that is not currently booked for the days that are being overwritten
+                cursor.execute(clearing_query)
                 for day_of_week, appointments in availability.items(multi=True):
                     for slot in appointments:
                         begin_period, end_period = slot
@@ -98,8 +103,6 @@ class DatabasePersistence:
         Marks a booking period in the availability_period table as booked by marking the 'is_booked' column value as True.
         Inserts the UUID if passed otherwise Null
         """
-        pprint(start)
-        pprint(end)
         query = """UPDATE availability_period SET is_booked = TRUE, client_ref_id = %s WHERE begin_period = %s AND end_period = %s;"""
         logger.info("Executing query: %s", query)
         with self._database_connect() as conn:
@@ -192,20 +195,9 @@ class DatabasePersistence:
                                 end_period timestamp with time zone NOT NULL,
                                 availability_day_id integer NOT NULL REFERENCES availability_day (id),
                                 is_booked boolean DEFAULT false,
-                                client_ref_id UUID REFERENCES product_fulfillments(client_ref_id)
-                                );""")
-                cursor.execute("""
-                    SELECT COUNT(*)
-                    FROM information_schema.tables
-                    WHERE table_schema = 'public' AND table_name = 'bookings';
-                """)
-                if cursor.fetchone()[0] == 0:
-                    cursor.execute("""
-                                   CREATE TABLE bookings (
-                                   id serial PRIMARY KEY,
-                                   availability_period_id integer NOT NULL REFERENCES availability_period (id));
-                                   """)
-                self._setup_availability_period_function(cursor)
+                                client_ref_id UUID REFERENCES product_fulfillments(client_ref_id),
+                                CONSTRAINT unique_meeting_datetime UNIQUE (begin_period, end_period)
+                                );""")                
                 self._setup_purchase_fulfillment_function(cursor)
                 self._setup_booking_to_fulfillment_trigger(cursor)
                 # Set as UTC so we retrieve data in UTC for conversion on front-end
@@ -281,44 +273,6 @@ class DatabasePersistence:
                 RETURN fulfilled_status;
             END;
             $$ LANGUAGE plpgsql;"""
-            cursor.execute(create_function_query)
-
-    def _setup_availability_period_function(self, cursor):
-        """set up the function to run in the database that will check if availability periods exist for a given day of the week or not and if they do it will delete and overwrite the data when user resubmits new data
-        """
-        check_function_query = """
-                                SELECT EXISTS (
-                                SELECT 1
-                                FROM pg_proc
-                                JOIN pg_namespace ON pg_proc.pronamespace = pg_namespace.oid
-                                WHERE proname = %s AND nspname = %s);
-                                """
-        function_name = 'input_or_replace_availability'
-        schema_name = 'public'
-        # Check if the function exists within the database
-        cursor.execute(check_function_query, (function_name, schema_name))
-        function_exists = cursor.fetchone()[0]
-
-        # If the function doesn't exist, create it
-        # Build function to only handle one availability period at a time based on system design. Can re-factor to loop through entire availability in future
-        if not function_exists:
-            create_function_query = """
-                CREATE FUNCTION input_or_replace_availability(
-                    start_period timestamp with time zone,
-                    finish_period timestamp with time zone,
-                    day_of_week_id integer)
-                    RETURNS VOID AS $$
-                    BEGIN
-                        -- Delete existing availability
-                        DELETE FROM availability_period
-                        WHERE availability_day_id = day_of_week_id
-                        --prevent deletion of booked periods
-                        AND is_booked = FALSE;
-                        -- Insert the new availability
-                        INSERT INTO availability_period (begin_period, end_period, availability_day_id) VALUES (start_period, finish_period, day_of_week_id);
-                    END;
-                    $$ LANGUAGE plpgsql;
-                                    """
             cursor.execute(create_function_query)
 
 # For testing:

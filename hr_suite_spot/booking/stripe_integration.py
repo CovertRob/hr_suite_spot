@@ -22,7 +22,7 @@ class StripeProcessor:
         # If none, then get local development key
         if not api_key:
             try:
-                api_key_path = Path("./booking/stripe_test_api_key.json")
+                api_key_path = Path("./hr_suite_spot/booking/stripe_test_api_key.json")
                 with open(api_key_path, 'r') as file:
                     data = json.load(file)
                 api_key = data.get("STRIPE_API_KEY")

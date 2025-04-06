@@ -5,6 +5,7 @@ import re
 from datetime import date, datetime, timezone, timedelta
 from .error_utils import TimeValidationError
 from pprint import pprint
+from zoneinfo import ZoneInfo
 
 def validate_availability_input_format(input: MultiDict) -> bool:
     """Fomat IAF:
@@ -38,7 +39,7 @@ def validate_availability_input_format(input: MultiDict) -> bool:
             return False
     return True
 
-def convert_to_iso_with_tz(input: MultiDict) -> MultiDict:
+def convert_to_iso_with_tz(input: MultiDict, timezone: str) -> MultiDict:
     """
     Takes the input of availability period data already in ISO format and performs time and date validation checks and then adds in timezone info.
     Performs all non-format time validations.
@@ -68,8 +69,9 @@ def convert_to_iso_with_tz(input: MultiDict) -> MultiDict:
             start = datetime.strptime(start.replace('T', ' '), format_str)
             end = datetime.strptime(end.replace('T', ' '), format_str)
 
-            tz = timezone(timedelta(hours=-8)) # Pre-set for PST
-
+            # tz = timezone(timedelta(hours=-8)) # Pre-set for PST
+            
+            tz = ZoneInfo(timezone)
             # Add in time-zone
             start = start.replace(tzinfo=tz)
             end = end.replace(tzinfo=tz)
@@ -192,26 +194,28 @@ def split_into_30min_segments(begin_time: datetime, end_time: datetime) -> list[
     end_minutes = end_time.time().minute
     begin_hours = begin_time.time().hour
     begin_minutes = begin_time.time().minute
+    # Must include tzinfo so datetime objects are aware othereise db won't normalize to UTC correctly, depending on what it has set as its timezone
+    tz = begin_time.tzinfo
     
     time_slots = []
     # Include bottom of the hour if 0 minutes
     if begin_minutes == 0:
-        time_slots.append(datetime(begin_time.year, begin_time.month, begin_time.day, begin_hours, 0))
+        time_slots.append(datetime(begin_time.year, begin_time.month, begin_time.day, begin_hours, 0, tzinfo=tz))
     # 30 minute time slot starts from time generated
     # Only include minutes start if under 30 minutes
     # If minutes is above '30', go to next availale hour since meetings are a minimum of 30 minute slots
     if begin_minutes < 30:
-        time_slots.append(datetime(begin_time.year, begin_time.month, begin_time.day, begin_hours, 30))
+        time_slots.append(datetime(begin_time.year, begin_time.month, begin_time.day, begin_hours, 30, tzinfo=tz))
     # Start iterating from begin_hours + 1 since we handled the minutes case above
     # Iterate starting from the first hour past the start period's minute case and go to end period's hour exlusive so we don't append 30 minutes past
     for i in range(1, (end_hours - (begin_hours + 1)) + 1):
         # Start by appendin bottom of hour
-        time_slots.append(datetime(begin_time.year, begin_time.month, begin_time.day, begin_hours+i))
+        time_slots.append(datetime(begin_time.year, begin_time.month, begin_time.day, begin_hours+i, tzinfo=tz))
         # Append 
-        time_slots.append(datetime(begin_time.year, begin_time.month, begin_time.day, begin_hours+i, 30))
+        time_slots.append(datetime(begin_time.year, begin_time.month, begin_time.day, begin_hours+i, 30, tzinfo=tz))
     # If end time period has more than 30 minutes available, append that period
     if end_minutes >= 30:
-        time_slots.append(datetime(end_time.year, end_time.month, begin_time.day, end_hours, 30))
+        time_slots.append(datetime(end_time.year, end_time.month, begin_time.day, end_hours, 30, tzinfo=tz))
     return time_slots
 
 def _map_to_iso(availability_period_record):

@@ -1,9 +1,17 @@
 {% extends 'layout_2.html' %}
 
 {% block content %}
+<script>
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  document.addEventListener("DOMContentLoaded", function () {
+    document.getElementById("timezone-input").value = timezone;
+  });
+</script>
+
 <section id="sbs-2180">
 <div>
   <form method="post" action="/calendar">
+    <input type="hidden" name="timezone" id="timezone-input">
     <span>Please submit using 24hr time format.</span>
     <ul>
         {% for day in days_of_week %}
@@ -13,7 +21,7 @@
             <input name="{{ day }}" id="start" placeholder="YEAR-MM-DD HH:MM:SS PST"/>
             <input name="{{ day }}" id="end" placeholder="YEAR-MM-DD HH:MM:SS PST"/>
             <label>
-              <input type="hidden" name="repeat_{{ day }}" value="false">
+              <input type="hidden" name="repeat_{{ day }}" value="false"> 
               <input type="checkbox", name="repeat_{{ day }}", value="true">
               Re-occurring
             </label>
@@ -21,7 +29,6 @@
         </li>
         {% endfor %}
       </ul>
-      
     <button type="submit">Submit Availability</button>
   </form>
 </div>
