@@ -1,6 +1,13 @@
 {% extends 'layout_2.html' %}
 
 {% block content %}
+<script>
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  document.addEventListener("DOMContentLoaded", function () {
+    document.getElementById("timezone-input").value = timezone;
+  });
+</script>
+
 <section id="sbs-2180">
 <div>
   <form method="post" action="/calendar">
@@ -14,6 +21,7 @@
             <input name="{{ day }}" id="end" placeholder="YEAR-MM-DD HH:MM:SS PST"/>
             <label>
               <input type="hidden" name="repeat_{{ day }}" value="false">
+              <input type="hidden" name="timezone" id="timezone-input">
               <input type="checkbox", name="repeat_{{ day }}", value="true">
               Re-occurring
             </label>
