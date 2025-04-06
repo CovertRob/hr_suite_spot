@@ -35,7 +35,7 @@ class GmailIntegration:
         api_key_path = os.getenv('SERVICE_ACCOUNT_FILE')
         # If none, then get local development key
         if not api_key_path:
-            api_key_path = Path("./booking/hr-suite-spot-8164bd363e86.json")
+            api_key_path = Path("./hr_suite_spot/booking/hr-suite-spot-8164bd363e86.json")
         return api_key_path
     
 
