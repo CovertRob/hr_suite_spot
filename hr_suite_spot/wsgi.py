@@ -1,4 +1,4 @@
-from app import app
+from hr_suite_spot.app import app
 
 if __name__ == "__main__":
     app.run()
