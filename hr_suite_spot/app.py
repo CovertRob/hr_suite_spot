@@ -6,8 +6,8 @@ from uuid import UUID, uuid4
 from flask import Flask, render_template, request, flash, redirect, g, url_for, jsonify
 import secrets
 from flask_debugtoolbar import DebugToolbarExtension
-from booking import database, error_utils, booking_service, stripe_integration, mailchimp_integration, gmail
-from booking import booking_utils as util
+from hr_suite_spot.booking import database, error_utils, booking_service, stripe_integration, mailchimp_integration, gmail
+from hr_suite_spot.booking import booking_utils as util
 from functools import wraps
 from werkzeug.datastructures import MultiDict
 from json import dumps
