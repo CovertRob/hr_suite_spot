@@ -20,9 +20,6 @@ services:
     sync: true
   - key: FLASK_ENV
     sync: true
-  secretFiles:
-  - name: hr-suite-spot-8164bd363e86.json
-    mountPath: /etc/secrets/hr-suite-spot-8164bd363e86.json
   region: oregon
   buildCommand: poetry install
   startCommand: gunicorn hr_suite_spot.wsgi:app -b :$PORT
