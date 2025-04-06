@@ -9,19 +9,19 @@ services:
   plan: starter
   envVars:
   - key: DATABASE_URL
-    sync: false
+    sync: true
   - key: hr-suite-spot-8164bd363e86.json
-    sync: false
+    sync: true
   - key: SERVICE_ACCOUNT_FILE
-    sync: false
+    sync: true
   - key: STRIPE_API_KEY
-    sync: false
+    sync: true
   - key: MAILCHIMP_API_KEY
-    sync: false
+    sync: true
   - key: HASH_ADMIN
-    sync: false
+    sync: true
   - key: FLASK_ENV
-    sync: false
+    sync: true
   region: oregon
   buildCommand: poetry install
   startCommand: gunicorn hr_suite_spot.wsgi:app -b :$PORT
