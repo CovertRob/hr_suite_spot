@@ -17,7 +17,7 @@ from stripe import SignatureVerificationError
 from flask_httpauth import HTTPBasicAuth
 from werkzeug.security import generate_password_hash, check_password_hash
 import re
-
+from pprint import pprint
 logger = logging.getLogger(__name__)
 
 def create_app():
@@ -110,6 +110,7 @@ def get_calendar():
 def submit_availability():
     days_of_week = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
     user_timezone = request.form.get('timezone')
+    pprint(user_timezone)
     # Separate out availability period data so the "re-occurring" boolean values don't mess with time format validation functions
     availability_data = MultiDict()
     for k, v in request.form.items(multi=True):

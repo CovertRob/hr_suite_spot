@@ -70,6 +70,7 @@ def convert_to_iso_with_tz(input: MultiDict, timezone: str) -> MultiDict:
             end = datetime.strptime(end.replace('T', ' '), format_str)
 
             # tz = timezone(timedelta(hours=-8)) # Pre-set for PST
+            
             tz = ZoneInfo(timezone)
             # Add in time-zone
             start = start.replace(tzinfo=tz)
