@@ -55,7 +55,7 @@ class MailChimpIntegration:
             # If none, then get local development key
         if not api_key:
             try:
-                api_key_path = Path("./booking/mailchimp.json")
+                api_key_path = Path("./hr_suite_spot/booking/mailchimp.json")
                 with open(api_key_path, 'r') as file:
                     data = json.load(file)
                     api_key = data.get("api_key")
