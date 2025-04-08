@@ -74,7 +74,7 @@ class GmailIntegration:
 
     def _authorize(self):
         creds = service_account.Credentials.from_service_account_file(
-                self.get_api_key_path.absolute(),
+                self.get_api_key_path,
                 scopes=self.SCOPES,
                 subject=self.BUSINESS_EMAIL  # Impersonating the business email
             )
