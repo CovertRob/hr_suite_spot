@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const availableTimeMap = {};
       localTimes.forEach(timeStr => {
           // Split the date and time parts
-          const [datePart, timePart] = timeStr.split(' ');
+          const [datePart, timePart] = timeStr.split(/ (.+)/);
           if (!availableTimeMap[datePart]) {
               availableTimeMap[datePart] = [];
           }
