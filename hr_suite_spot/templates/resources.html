@@ -33,12 +33,12 @@
 <section class="sbs-content-box right-image">
   <div class="cs-container">
     <picture class="cs-picture">
-      <source media="(max-width: 600px)" srcset="{{ url_for('static', filename='images/WEBsize-5.jpg') }}">
-      <source media="(min-width: 601px)" srcset="{{ url_for('static', filename='images/WEBsize-5.jpg') }}">
+      <source media="(max-width: 600px)" srcset="{{ url_for('static', filename='images/j_on_steps.jpg') }}">
+      <source media="(min-width: 601px)" srcset="{{ url_for('static', filename='images/j_on_steps.jpg') }}">
       <img 
         loading="lazy" 
         decoding="async" 
-        src="{{ url_for('static', filename='images/WEBsize-5.jpg') }}" 
+        src="{{ url_for('static', filename='images/j_on_steps.jpg') }}" 
         alt="woman in dress" 
       >
     </picture>
@@ -48,9 +48,9 @@
         Do you want to make more money at your job? Here's how you do it!
       </p>
       <p class="cs-text">
-        Purchase the guide for just $4.99 and I'll step you through exactly how to do it.
+        I'll step you through exactly how to do it.
       </p>
-      <a href="/checkout?checkout_type=salary_guide&checkout_amount=1" class="cs-button-solid">Purchase</a>
+      <a href="/checkout?checkout_type=salary_guide&checkout_amount=1" class="cs-button-solid">Get it Now</a>
     </div>
   </div>
 </section>
@@ -58,12 +58,12 @@
 <section class="sbs-content-box left-image">
     <div class="cs-container">
       <picture class="cs-picture">
-        <source media="(max-width: 600px)" srcset="{{ url_for('static', filename='images/WEBsize-2.jpg') }}">
-        <source media="(min-width: 601px)" srcset="{{ url_for('static', filename='images/WEBsize-2.jpg') }}">
+        <source media="(max-width: 600px)" srcset="{{ url_for('static', filename='images/WEBsize-5.jpg') }}">
+        <source media="(min-width: 601px)" srcset="{{ url_for('static', filename='images/WEBsize-5.jpg') }}">
         <img 
           loading="lazy" 
           decoding="async" 
-          src="{{ url_for('static', filename='images/WEBsize-2.jpg') }}" 
+          src="{{ url_for('static', filename='images/WEBsize-5.jpg') }}" 
           alt="woman reading" 
         >
       </picture>
@@ -109,5 +109,84 @@
     </div>
   </section>
 </div>
+<!-- ============================================ -->
+<!--                   Services                   -->
+<!-- ============================================ --> 
+<link rel="stylesheet" href="{{ url_for('static', filename='stylesheets/coaching_call_resources.css') }}">
+<section id="services-1191">
+    <div class="cs-container">
+        <div class="cs-content">
+            <span class="cs-topper">Career Coaching</span>
+            <h2 class="cs-title">Why work with a Career Coach?</h2>
+            <p class="cs-text">
+                Do you want to increase your income, make a meaningful impact, and find more freedom in your professional life? I can make that happen for you.
+            </p>
+        </div>
+        <!--Placed in a wrapper div so we can position the car absolutely inside the container to be centered in the middle of the list on desktop-->
+        <div class="cs-wrapper">
+            <!--Car-->
+            <picture class="cs-image">
+                <source media="(max-width: 600px)" srcset="{{ url_for('static', filename='images/ben_and_out.JPG') }}">
+                <source media="(min-width: 601px)" srcset="{{ url_for('static', filename='images/ben_and_out.JPG') }}">
+                <img 
+                  loading="lazy" 
+                  decoding="async" 
+                  src="{{ url_for('static', filename='images/ben_and_out.JPG') }}" 
+                  alt="Benefits and Outcomes infographic" 
+                >
+              </picture>
+            <ul class="cs-card-group">
+                <li class="cs-item">
+                    
+                    <!-- Text Grouped For Flexbox-->
+                    <div class="cs-text-group">
+                        <h3 class="cs-h3">Foster Accountability</h3>
+                        <p class="cs-item-text">Building a sense of accountability helps you stay committed to your professional growth and ensures you make continuous progress toward your career objectives.
+                        </p>
+                    </div>
+                </li>
+                <li class="cs-item">
+                    <!-- Text Grouped For Flexbox-->
+                    <div class="cs-text-group">
+                        <h3 class="cs-h3">Enhance Career Well-Being</h3>
+                        <p class="cs-item-text">Improve and manage workplace-related stress and anxiety through supportive strategies tailored for your professional life.</p>
+                    </div>
+                </li>
+                <li class="cs-item">
+                    <!-- Text Grouped For Flexbox-->
+                    <div class="cs-text-group">
+                        <h3 class="cs-h3">Define Career Goals</h3>
+                        <p class="cs-item-text">Identify and set clear career objectives, developing actionable plans to achieve your professional aspirations.</p>
+                    </div>
+                </li>
+                <li class="cs-item">
+                    <!-- Text Grouped For Flexbox-->
+                    <div class="cs-text-group">
+                        <h3 class="cs-h3">Navigate Career Transitions</h3>
+                        <p class="cs-item-text">Address and overcome obstacles from previous job experiences or transitions to pave the way for a more fulfilling career path.
+                        </p>
+                    </div>
+                </li>
+                <li class="cs-item">
+                    <!-- Text Grouped For Flexbox-->
+                    <div class="cs-text-group">
+                        <h3 class="cs-h3">Strengthen Professional Relationships</h3>
+                        <p class="cs-item-text">Cultivate and improve relationships with colleagues, mentors, and professional networks to foster a collaborative work environment.
+                        </p>
+                    </div>
+                </li>
+                <li class="cs-item">
+                    <!-- Text Grouped For Flexbox-->
+                    <div class="cs-text-group">
+                        <h3 class="cs-h3">Gain Career Clarity</h3>
+                        <p class="cs-item-text">If you're feeling uncertain about your career direction, we&apos;ll work together to clarify your goals and options, allowing for informed decision-making.
+                        </p>
+                    </div>
+                </li>
+            </ul>
+        </div>
+        <a href="booking/coaching" class="cs-button-solid">Book Appointment</a>
+    </div>
+</section>
   {% include 'footer.html' %}
 {% endblock %}

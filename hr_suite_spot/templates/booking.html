@@ -33,8 +33,9 @@
                   Email
                   <input class="cs-input" required type="email" id="email-1184" name="booking_email" placeholder="Email" required>
               </label>
-              <input type="text" id="appointment-picker" data-appointments='{{ appointments|safe }}' placeholder="Select appointment date">
-        
+              <label class="cs-label">Appointment Date & Time
+                <input class="cs-input" type="text" id="appointment-picker" data-appointments='{{ appointments|safe }}' placeholder="Select appointment date">
+              </label>
               <div id="validation-message" style="color: red; display: none;">Please select a valid appointment time.</div>
               <button class="cs-button-solid cs-submit" type="submit">Make an Appointment</button>
           </form>

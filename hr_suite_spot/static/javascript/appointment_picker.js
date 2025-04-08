@@ -34,14 +34,14 @@ document.addEventListener('DOMContentLoaded', function() {
   function updateAvailableTimes(utcTimes, timezone) {
       // Convert UTC times to the user's timezone
       const localTimes = utcTimes.map(timeStr => {
-          return moment.utc(timeStr).tz(timezone).format('YYYY-MM-DD HH:mm');
+          return moment.utc(timeStr).tz(timezone).format('YYYY-MM-DD hh:mm A');
       });
       
       // Create a mapping of dates to available times
       const availableTimeMap = {};
       localTimes.forEach(timeStr => {
           // Split the date and time parts
-          const [datePart, timePart] = timeStr.split(' ');
+          const [datePart, timePart] = timeStr.split(/ (.+)/);
           if (!availableTimeMap[datePart]) {
               availableTimeMap[datePart] = [];
           }
@@ -120,7 +120,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Add form submission validation
   document.getElementById("appointment-form").addEventListener("submit", function(event) {
       const selectedDateTime = document.getElementById("selected-datetime").value;
-      const convertedToUTC = moment.tz(selectedDateTime, 'YYYY-MM-DD HH:mm', userTimezone).utc().format('YYYY-MM-DD HH:mm:ssZ');
+      const convertedToUTC = moment.tz(selectedDateTime, 'YYYY-MM-DD hh:mm A', userTimezone).utc().format('YYYY-MM-DD HH:mm:ssZ');
       
       if (!availableTimesUTC.includes(convertedToUTC)) {
           event.preventDefault();

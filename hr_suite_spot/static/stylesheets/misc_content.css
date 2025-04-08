@@ -25,6 +25,10 @@
       gap: clamp(3rem, 6vw, 4rem);
       padding-top: 3rem;
     }
+
+    #content-1450 .cs-container.orange {
+      padding-top: 1rem;
+    }
     #content-1450 .cs-content {
       /* set text align to left if content needs to be left aligned */
       text-align: center;
@@ -37,6 +41,10 @@
     #content-1450 .cs-title,
     #content-1450 .cs-text {
       max-width: 100%;
+    }
+    /* Make the second title italics */
+    #content-1450 .cs-title:nth-child(2) {
+      font-style: italic;
     }
     #content-1450 .cs-text {
       /* 16px - 20px */
@@ -84,9 +92,15 @@
       width: 50%;
     }
 
+    /* Change font weight */
+    #content-1450 .cs-topper {
+      font-size: 1.75rem;
+    }
+
     #content-1450 .cs-content.with-pic {
       flex-direction: column;
       gap: 3rem;
+      align-items: flex-start;
 
     }
 
@@ -135,8 +149,10 @@
     }
 
      /* Start home page resource list */
+
     .pic.dynamic {
       height: auto;
+      max-width: 50%;
       width: auto;
       margin-top: 2rem;
     }
@@ -154,6 +170,8 @@
       margin-top: 2rem;
     }
 
+    /* Start next section */
+
     .dynamic.title.white {
       font-weight: bold;
       color: #fff;
@@ -168,7 +186,8 @@
     #orange {
       font-weight: bold;
       font-size: var(--headerFontSize);
-      padding-bottom: 2rem;
+      padding-bottom: 3rem;
+      margin-top: 0;
       color: var(--primary);
     }
 
@@ -271,6 +290,22 @@
     }
 
     /* start resource list */
+    /*non orange */
+    #content-1450 .cs-content.resource-list { 
+      flex-direction: row;
+      column-gap: 2rem;
+      justify-content:end;
+     }
+
+     #content-1450 .resource-inner-list {
+      min-width: 50%;
+      padding-left: 2rem;
+     }
+
+     #content-1450 .cs-content.resource-list.orange { 
+      flex-direction: column
+     }
+
     .cs-button-solid.dynamic {
       line-height: 1.2;
     }

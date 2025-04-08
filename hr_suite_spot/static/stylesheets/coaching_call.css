@@ -1,229 +1,146 @@
-/*-- -------------------------- -->
-<---          Services          -->
-<--- -------------------------- -*/
+/* coaching_call.css */
 
-/* Mobile - 360px */
-@media only screen and (min-width: 0rem) {
-    #services-1191 {
-        padding: var(--sectionPadding);
-        /* prevents padding from affecting height and  */
-        box-sizing: border-box;
-    }
-    #services-1191 .cs-container {
-        /* changes to 1440px at desktop */
-        max-width: 58.75rem;
-        width: 100%;
-        margin: auto;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        /* 48px - 64px */
-        gap: clamp(3rem, 6vw, 4rem);
-        padding-top: 3rem;
-    }
-    #services-1191 .cs-content {
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-        /* centers content horizontally, set to flex-start to left align */
-        align-items: center;
-        /* set text align to left if content needs to be left aligned */
-        text-align: center;
-    }
-
-    #services-1191 .cs-title {
-        max-width: 20ch;
-    }
-    #services-1191 .cs-wrapper {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        /* 48px - 64px */
-        gap: clamp(3rem, 6vw, 4rem);
-        position: relative;
-    }
-    #services-1191 .cs-image {
-        width: 100%;
-        max-width: 31.875rem;
-        height: auto;
-        display: block;
-        position: relative;
-    }
-    #services-1191 .cs-image img {
-        width: 100%;
-        height: auto;
-    }
-    #services-1191 .cs-card-group {
-        width: 100%;
-        margin: 0;
-        padding: 0;
-        display: grid;
-        justify-content: center;
-        row-gap: 1rem;
-    }
-    #services-1191 .cs-item {
-        text-align: center;
-        list-style: none;
-        max-width: 23rem;
-        width: 100%;
-        margin: 0;
-        box-sizing: border-box;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 1.25rem;
-    }
-    #services-1191 .cs-picture {
-        width: 5rem;
-        height: 5rem;
-        box-sizing: border-box;
-        /* prevents border from affecting height and width */
-        background-color: #f7f7f7;
-        border-radius: 50%;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        position: relative;
-        /* prevents flexbox from squishing it */
-        flex: none;
-    }
-    #services-1191 .cs-icon {
-        width: 1.875rem;
-        height: auto;
-        display: block;
-    }
-    #services-1191 .cs-h3 {
-        font-size: 1.25rem;
-        line-height: 1.5em;
-        margin: 0;
-        margin-bottom: 0.5rem;
-        color: var(--headerColor);
-        text-align: inherit;
-    }
-    #services-1191 .cs-item-text {
-        /* 14px - 16px */
-        font-size: clamp(0.875rem, 1.5vw, 1rem);
-        line-height: 1.5em;
-        margin: 0;
-        color: var(--bodyTextColor);
-        text-align: inherit;
-    }
-    #services-1191 .cs-button-solid {
-        font-size: 1rem;
-        /* 46px - 56px */
-        line-height: clamp(2.875rem, 5.5vw, 3.5rem);
-        font-weight: 700;
-        min-width: 9.375rem;
-        margin: 0;
-        /* prevents padding from adding to the width */
-        box-sizing: border-box;
-        padding: 0 1.5rem;
-        color: #fff;
-        background-color: var(--primary);
-        text-decoration: none;
-        display: inline-block;
-        position: relative;
-        z-index: 1;
-        text-align: center;
-        border-radius: .5rem;
-    }
-    #services-1191 .cs-button-solid:before {
-        content: "";
-        width: 0%;
-        height: 100%;
-        background: var(--secondary);
-        opacity: 1;
-        position: absolute;
-        top: 0;
-        left: 0;
-        z-index: -1;
-        transition: width 0.3s;
-    }
-    #services-1191 .cs-button-solid:hover:before {
-        width: 100%;
-    }
+#coaching-call {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
+
 /* Tablet - 768px */
 @media only screen and (min-width: 48rem) {
 
-    #services-1191 .cs-container {
-        padding-top: 0;
+    .white-text, .content-main{
+        max-width: 75%;
     }
-    #services-1191 .cs-card-group {
-        display: flex;
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-    }
-    #services-1191 .cs-item {
-        text-align: left;
-        margin: 0;
-        width: 32%;
-        align-items: flex-start;
-    }
-
-    #services-1191 .cs-title {
-        max-width: 100%;
-    }
-    #services-1191 .cs-image {
-        max-height: 28.125rem;
-    }
-    #services-1191 .cs-image img {
-        width: 100%;
-        height: auto;
-        max-height: 28.125rem;
-        object-fit: contain;
-    }
-}
-/* Desktop - 1024px */
-@media only screen and (min-width: 64rem) {
-    #services-1191 .cs-container {
-        max-width: 90rem;
-    }
-    #services-1191 .cs-image {
-        width: 30vw;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        position: absolute;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%, -50%);
-    }
-    #services-1191 .cs-image img {
-        width: auto;
-        height: auto;
-    }
-    #services-1191 .cs-card-group {
-        align-items: flex-start;
-        justify-content: center;
-        /* 180px - 356px */
-        column-gap: clamp(11.25rem, 21vw, 22.25rem);
-        /* 40px - 88px */
-        row-gap: clamp(2.5rem, 8vw, 5.5rem);
-    }
-    #services-1191 .cs-item {
-        width: 32vw;
-        max-width: 26.375rem;
-        flex-direction: row;
-        position: relative;
-    }
-    #services-1191 .cs-item:nth-of-type(odd) {
-        text-align: right;
-    }
-    #services-1191 .cs-item:nth-of-type(odd) .cs-picture {
-        /* sends it to the right in the 2nd position */
-        order: 2;
-    }
-    #services-1191 .cs-item:nth-of-type(3) {
-        /* 90px - 1280px */
-        left: calc(clamp(5.625rem, 8vw, 8rem) * -1);
-    }
-    #services-1191 .cs-item:nth-of-type(4) {
-        /* 90px - 1280px */
-        right: calc(clamp(5.625rem, 8vw, 8rem) * -1);
-    }
+    
 }
 
-                                
+.content-topper {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: #f7931e;
+    padding: 2rem;
+    padding-top: 6rem;
+    text-align: center;
+}
+
+.content-topper h3 {
+    color: #fff;
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    line-height: 1.6;
+}
+
+#body {
+    display: flex;
+    justify-content: center;
+}
+
+.content-main {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 2rem;
+    background-color: #fff;
+}
+
+.content-img {
+    flex: 1 1 300px;
+    max-width: 400px;
+    padding: 1rem;
+    display: flex;
+    justify-content: center;
+}
+
+.content-img img {
+    width: 100%;
+    border-radius: 15px;
+    object-fit: cover;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.content-text {
+    flex: 1 1 400px;
+    padding: 1rem 2rem;
+}
+
+.content-list .text-element {
+    margin-bottom: 1rem;
+    font-size: 1rem;
+    line-height: 1.6;
+    color: #333333; /* dark gray/black body text */
+    font-weight: normal;
+}
+
+.content-list .text-element strong {
+    font-weight: bolder; /* bold for emphasis */
+    color: var(--primary);
+}
+
+
+#main-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #f7931e;
+    margin-bottom: 1.5rem;
+}
+
+#main-title em {
+    font-style: italic;
+}
+
+.text-element strong,
+.text-element span {
+    font-weight: 700;
+}
+
+.content-text a {
+    display: inline-block;
+    background-color: #2596be;
+    color: #fff;
+    font-weight: 700;
+    padding: 0.8rem 1.5rem;
+    border-radius: 9999px;
+    text-decoration: none;
+    margin-top: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+    transition: background-color 0.3s ease;
+}
+
+.content-text a:hover {
+    background-color: #1f7fa0;
+}
+
+.content-footer {
+    background-color: #f7931e;
+    display: flex;
+    color: #fff;
+    padding: 2rem;
+    text-align: center;
+    justify-content: center;
+}
+
+.footer-text {
+    font-weight: 700;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+    
+}
+
+.footer-list {
+    list-style-type: none;
+    padding: 0;
+}
+
+.footer-list-item {
+    font-weight: 700;
+    font-size: 1rem;
+    margin: 0.3rem 0;
+}
+
+.footer-list-item::before {
+    content: "▸ ";
+    color: #fff;
+}

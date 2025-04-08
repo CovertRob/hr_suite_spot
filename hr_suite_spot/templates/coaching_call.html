@@ -4,79 +4,43 @@
 {% extends 'layout_2.html' %}
 {% block content %}  
 <link rel="stylesheet" href="{{ url_for('static', filename='stylesheets/coaching_call.css') }}">
-<section id="services-1191">
-    <div class="cs-container">
-        <div class="cs-content">
-            <span class="cs-topper">Career Coaching</span>
-            <h2 class="cs-title">Why work with a Career Coach?</h2>
-            <p class="cs-text">
-                Do you want to increase your income, make a meaningful impact, and find more freedom in your professional life? I can make that happen for you.
-            </p>
+<section id="coaching-call">
+    <div class="content-topper">
+        <h3 class="white-text">Do you want to increase your income, make a meaningful impact, and find more freedom in your professsional life?</h3>
+        <h3 class="white-text">If you're serious about advancing your career or launching a successful job search, let's connect!</h3>
+    </div>
+    <div id="body">
+        <div class="content-main">
+            <div class="content-img">
+                <img loading="lazy" 
+                decoding="async" 
+                src="{{ url_for('static', filename='images/j_on_comp.jpg') }}" 
+                alt="Coaching call benefits">
+            </div>
+            <div class="content-text">
+                <h2 id="main-title">When you work with me:</h2>
+                <div class="content-list">
+                    <p class="text-element"><strong>Expertise You Can Trust:</strong> With over eight years of HR industry experience and a PHR® certification, I bring a wealth of knowledge to help you navigate your career path effectively.</p>
+                    <p class="text-element"> <strong>Real-World Insight:</strong>Having held various HR roles across multiple industries— including Aerospace, Banking, and Healthcare—I understand what employers are looking for and can guide you to meet those expectations.</p>
+                    <p class="text-element"><strong>Personalized Coaching Passion:</strong> My passion for mentoring and teaching stems from a genuine desire to see you succeed. I provide honest feedback and tailored support to help you achieve your career goals.</p>
+                    <p class="text-element"><strong>Proven Track Record:</strong> My diverse experience with both global and local companies means I have the insights needed to help you land your dream job, no matter the sector.</p>
+                    <p class="text-element"><strong>Dedicated to Your Success:</strong> I&apos;m committed to ensuring we achieve your career aspirations together. My proactive approach guarantees that I&apos;ll be with you every step of the way until you find your perfect fit!</p>
+                </div>
+                <a href="/booking/coaching">Book a 1X1 coaching call with Jasmin</a>
+            </div>
         </div>
-        <!--Placed in a wrapper div so we can position the car absolutely inside the container to be centered in the middle of the list on desktop-->
-        <div class="cs-wrapper">
-            <!--Car-->
-            <picture class="cs-image">
-                <source media="(max-width: 600px)" srcset="{{ url_for('static', filename='images/ben_and_out.JPG') }}">
-                <source media="(min-width: 601px)" srcset="{{ url_for('static', filename='images/ben_and_out.JPG') }}">
-                <img 
-                  loading="lazy" 
-                  decoding="async" 
-                  src="{{ url_for('static', filename='images/ben_and_out.JPG') }}" 
-                  alt="Benefits and Outcomes infographic" 
-                >
-              </picture>
-            <ul class="cs-card-group">
-                <li class="cs-item">
-                    
-                    <!-- Text Grouped For Flexbox-->
-                    <div class="cs-text-group">
-                        <h3 class="cs-h3">Foster Accountability</h3>
-                        <p class="cs-item-text">Building a sense of accountability helps you stay committed to your professional growth and ensures you make continuous progress toward your career objectives.
-                        </p>
-                    </div>
-                </li>
-                <li class="cs-item">
-                    <!-- Text Grouped For Flexbox-->
-                    <div class="cs-text-group">
-                        <h3 class="cs-h3">Enhance Career Well-Being</h3>
-                        <p class="cs-item-text">Improve and manage workplace-related stress and anxiety through supportive strategies tailored for your professional life.</p>
-                    </div>
-                </li>
-                <li class="cs-item">
-                    <!-- Text Grouped For Flexbox-->
-                    <div class="cs-text-group">
-                        <h3 class="cs-h3">Define Career Goals</h3>
-                        <p class="cs-item-text">Identify and set clear career objectives, developing actionable plans to achieve your professional aspirations.</p>
-                    </div>
-                </li>
-                <li class="cs-item">
-                    <!-- Text Grouped For Flexbox-->
-                    <div class="cs-text-group">
-                        <h3 class="cs-h3">Navigate Career Transitions</h3>
-                        <p class="cs-item-text">Address and overcome obstacles from previous job experiences or transitions to pave the way for a more fulfilling career path.
-                        </p>
-                    </div>
-                </li>
-                <li class="cs-item">
-                    <!-- Text Grouped For Flexbox-->
-                    <div class="cs-text-group">
-                        <h3 class="cs-h3">Strengthen Professional Relationships</h3>
-                        <p class="cs-item-text">Cultivate and improve relationships with colleagues, mentors, and professional networks to foster a collaborative work environment.
-                        </p>
-                    </div>
-                </li>
-                <li class="cs-item">
-                    <!-- Text Grouped For Flexbox-->
-                    <div class="cs-text-group">
-                        <h3 class="cs-h3">Gain Career Clarity</h3>
-                        <p class="cs-item-text">If you're feeling uncertain about your career direction, we&apos;ll work together to clarify your goals and options, allowing for informed decision-making.
-                        </p>
-                    </div>
-                </li>
+    </div>
+    <div class="content-footer">
+        <div class="white-text">
+            <p class="footer-text">During a career coaching call with me, we will delve into your situation or the specific topic you need assistance with. Before the call, you will share ample details so that we can maximize our time discussing solutions and determining the next steps to propel you in the right direction. As every individual case is different, you may receive a tailored plan, coaching for relevant conversations, and even access to free resources that align with your particular circumstances. Some common call themes are:</p>
+            <ul class="footer-list">
+                <li class="footer-list-item">Salary Negotiation</li>
+                <li class="footer-list-item">Promotions</li>
+                <li class="footer-list-item">Interview Prep</li>
+                <li class="footer-list-item">Job Search</li>
+                <li class="footer-list-item">Workplace Conflict</li>
             </ul>
         </div>
-        <a href="booking/coaching" class="cs-button-solid">Book Appointment</a>
     </div>
 </section>
 {% include 'footer.html' %}
