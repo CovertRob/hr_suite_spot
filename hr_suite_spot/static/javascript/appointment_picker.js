@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', function() {
   function updateAvailableTimes(utcTimes, timezone) {
       // Convert UTC times to the user's timezone
       const localTimes = utcTimes.map(timeStr => {
-          return moment.utc(timeStr).tz(timezone).format('YYYY-MM-DD HH:mm');
+          return moment.utc(timeStr).tz(timezone).format('YYYY-MM-DD hh:mm A');
       });
       
       // Create a mapping of dates to available times
