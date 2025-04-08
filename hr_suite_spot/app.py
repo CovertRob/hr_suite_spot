@@ -453,6 +453,7 @@ def submit_contact_form():
     gmail_service = gmail.GmailIntegration()
     return_message = gmail_service.send_email(name, email, message, phone)
     logger.info(f"{return_message}")
+    flash("Submitted! We'll be in touch soon.", 'success')
     return redirect(url_for('get_contact'))
 
 @app.route("/subscribe/<product>", methods=['GET'])
