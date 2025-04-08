@@ -411,7 +411,7 @@ def mailchimp_handler():
     if not submission_status: 
         flash('An error occurred. Please try again', 'error')
         return redirect('/index')
-    flash('Success! Thanks for subscribing.', 'success')
+    flash('Submitted! Keep an eye out for more FREE resources and early access to releases this spring.', 'success')
     return redirect('/index')
 
 def submit_to_mailchimp(user_email, client_ref_id, journey_tag=None):
@@ -459,7 +459,7 @@ def submit_contact_form():
 def render_product_subscription(product):
     return render_template('subscribe_template.html', product_type=product)
 
-@app.route("/coaching-call")
+@app.route("/coach")
 def render_coaching_call():
     return render_template('coaching_call.html')
 
