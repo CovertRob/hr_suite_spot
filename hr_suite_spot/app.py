@@ -250,7 +250,7 @@ def create_checkout_session():
 # Web-hook route
 # Use the secret provided by Stripe CLI for local testing
 # or your webhook endpoint's secret.
-endpoint_secret = 'whsec_724431fe58f3768bb230cfa4ff30e72e96587192160691a201acaad0a9f3dbf2'
+endpoint_secret = os.environ.get('WHSEC') # Provide in Render env var
 
 @app.route('/webhook', methods=['POST'])
 @instantiate_database
