@@ -177,7 +177,8 @@ def get_booking_slots(database) -> list[list[datetime]]:
     booking_slots = []
     # Remove the day-of-week info
     for period in time_periods:
-        booking_slots.append([period['start'], period['end']])
+        booking_slots.append([period['start']])
+    
     return booking_slots
     
 
@@ -208,14 +209,14 @@ def split_into_30min_segments(begin_time: datetime, end_time: datetime) -> list[
         time_slots.append(datetime(begin_time.year, begin_time.month, begin_time.day, begin_hours, 30, tzinfo=tz))
     # Start iterating from begin_hours + 1 since we handled the minutes case above
     # Iterate starting from the first hour past the start period's minute case and go to end period's hour exlusive so we don't append 30 minutes past
-    for i in range(1, (end_hours - (begin_hours + 1)) + 1):
+    for i in range(1, ((end_hours - begin_hours))):
         # Start by appendin bottom of hour
         time_slots.append(datetime(begin_time.year, begin_time.month, begin_time.day, begin_hours+i, tzinfo=tz))
         # Append 
         time_slots.append(datetime(begin_time.year, begin_time.month, begin_time.day, begin_hours+i, 30, tzinfo=tz))
-    # If end time period has more than 30 minutes available, append that period
+    # If end time period has more than 30 minutes available, append that period from bottom of the hour
     if end_minutes >= 30:
-        time_slots.append(datetime(end_time.year, end_time.month, begin_time.day, end_hours, 30, tzinfo=tz))
+        time_slots.append(datetime(end_time.year, end_time.month, begin_time.day, end_hours, tzinfo=tz))
     return time_slots
 
 def _map_to_iso(availability_period_record):
