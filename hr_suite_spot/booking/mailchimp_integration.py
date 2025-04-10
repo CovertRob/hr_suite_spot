@@ -15,10 +15,12 @@ logger = logging.getLogger(__file__)
 # Get journey's from here to put another layer between form injection and API
 MC_JOURNEYS = {'Resume Guide': 'Resume Guide',
                'salary_guide': 'Salary Guide', # Paid
-               'Interview Q&A Guide': 'Interview Q&A Guide',
+               'Interview Q&A Guide': 'Interview Q&A',
                'Job Search Checklist': 'Job Search Checklist'} # Update this upon push to prod
-
-AUDIENCE_ID = '2b11290018' # This is a unique identifier for the list, will need to change for official HRSS audience upon push to prod
+# if os.environ.get('FLASK_ENV', '') == 'production':
+#     AUDIENCE_ID = 'b31d982dc1' # Live Audience ID
+# else:
+AUDIENCE_ID = '2b11290018' # Test Audience ID
 
 # Current implementation: functions don't return response objects at this time. Won't catch the responses until caching is implemented.
 
