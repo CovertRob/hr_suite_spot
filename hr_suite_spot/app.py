@@ -259,7 +259,7 @@ def book_coaching_call(db, datetime_utc: str, booking_name: str, booking_email: 
 @app.errorhandler(404)
 def error_handler(error):
     flash(f"An error occurred.", "error")
-    logger.critical(f"A 404 Error occurred ATT.")
+    logger.critical(f"A 404 Error occurred ATT. error: {error}")
     return redirect("/index")
 
 # Handle in invalid googleapiclient response which raises a custom HttpError
