@@ -94,6 +94,8 @@ def require_state_token(session_key='state_token', query_param='token'):
         return wrapper
     return decorated_func
 
+# Future - improved logging w/ decorator and trace-id's
+
 @app.route('/')
 @set_state_token()
 def home():
@@ -133,6 +135,15 @@ def get_contact():
 @set_state_token()
 def get_calendar():
     days_of_week = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+    # Record usage while inside protected endpoint for visibility on actions
+    logger.info(
+            "Report on usage of protected /calendar-availability endpoint: | IP: %s | UA: %s | Method: %s | Args: %s | Time: %s",
+            request.remote_addr,
+            request.user_agent.string,
+            request.method,
+            request.args.to_dict(),
+            datetime.now().isoformat()
+        )
     return render_template('calendar.html', days_of_week=days_of_week)
 
 # This route only to be used by admin
@@ -188,6 +199,7 @@ def submit_availability():
         flash("Availability submitted", "success")
     else:
         flash("Availability insertion failed, probably due to format", "error")
+        logger.error(f"An error occurred while submitting admin's availability. Inspect the database.")
         return redirect('/calendar-availability')
     return redirect('/calendar-availability')
 
@@ -247,6 +259,7 @@ def book_coaching_call(db, datetime_utc: str, booking_name: str, booking_email: 
 @app.errorhandler(404)
 def error_handler(error):
     flash(f"An error occurred.", "error")
+    logger.critical(f"A 404 Error occurred ATT.")
     return redirect("/index")
 
 # Handle in invalid googleapiclient response which raises a custom HttpError
@@ -254,6 +267,7 @@ def error_handler(error):
 def handle_bad_api_call(error):
     # Will need to handle this differently in the future if the google booking fails after the user has already paid
     flash("An error occurred while booking your google appointment. Please re-try.", "error")
+    logger.critical(f"An HTTP Error occurred ATT.")
     return redirect("/booking/coaching")
 
 # Note: this route requires the submission of query parameters
@@ -342,7 +356,7 @@ def stripe_webhook():
         logger.error("Invalid webhook event type")
         return jsonify({"error": "Invalid event type"}), 400
     # Catch all response to avoid timeout
-    logger.info("Catch all response reached on webhook function.")
+    logger.warning("Catch all response reached on webhook function.")
     return jsonify({"status": "success"}), 200
 
 # Fulfillment function
@@ -381,12 +395,13 @@ def fulfill_checkout(event, db) -> bool:
                 event_states = book_coaching_call(db, customer_info.get('selected_datetime_utc'), customer_info.get('booking_name'), customer_info.get('booking_email'), client_ref_id)
                 if event_states.get('status') == 'confirmed':
                     return True
+                logger.error(f"An error occurred booking the coaching call. client_ref_id: {client_ref_id}, customer_info: {customer_info}")
                 return False
             case 'salary_guide':
                 customer_email = checkout_session.get('customer_details').get('email')
                 state = submit_to_mailchimp(customer_email, client_ref_id, 'salary_guide')
                 if not state:
-                    logger.error(f'Error occurred fulfilling salary guide via mailchimp. client_ref_id: {client_ref_id}')
+                    logger.error(f'Error occurred fulfilling salary guide via mailchimp. client_ref_id: {client_ref_id}, customer_info: {customer_info}')
                     return False
                 return True
             case _:
@@ -408,7 +423,15 @@ def checkout_success():
 def checkout_return():
     # Verify that no outside entity is trying to interact with the checkout return route by using session flag
     if not session.get('stripe_checkout_initiated'):
-        flash("You're not allowed to do that", 'error')
+        logger.warning(
+            "Unauthorized /return access attempt | IP: %s | UA: %s | Method: %s | Args: %s | Time: %s",
+            request.remote_addr,
+            request.user_agent.string,
+            request.method,
+            request.args.to_dict(),
+            datetime.now().isoformat()
+        )
+        flash("Unauthorized.", 'error')
         return redirect(url_for('index'))
     # Reset flag by removing
     session.pop('stripe_checkout_initiated', None)
@@ -422,7 +445,7 @@ def checkout_return():
     meta_data_as_json = json.dumps(stripe_session.metadata)
     # Fulfill product purchased if successful, otherwise return to homepage
     if stripe_session.status == 'open' or stripe_session.status == 'expired':
-        logger.error(f"Stripe processor error: payment_stauts: {stripe_session.payment_status}, fulfillment status: {fulfillment_status}")
+        logger.error(f"Stripe processor error: payment_stauts: {stripe_session.payment_status}, fulfillment status: {fulfillment_status}, client_ref_id: {client_ref_id}, metadata: {meta_data_as_json}")
         # Store reference to purchase attempt in local db
         g.db.insert_fulfillment(client_ref_id, meta_data_as_json, False)
         flash("Payment failed or cancelled. Please try again.", "error")
@@ -457,6 +480,7 @@ def mailchimp_handler():
     journey_tag = request.form.get('product_subscription', '')
     submission_status = submit_to_mailchimp(formatted_email, 'Free Resource', journey_tag)
     if not submission_status: 
+        logger.error(f"An error occurred submitting {formatted_email} to Mailchimp.")
         flash('An error occurred. Please try again', 'error')
         return redirect('/index')
     flash('Submitted! Keep an eye out for more FREE resources and early access to releases this spring.', 'success')
@@ -498,7 +522,7 @@ def submit_contact_form():
     
     gmail_service = gmail.GmailIntegration()
     return_message = gmail_service.send_email(name, formatted_email, formatted_message, formatted_phone)
-    logger.info(f"{return_message}")
+    logger.info(f"Gmail return from subscribe submission: {return_message}")
     try:
         if return_message.get('labelIds', None)[0] == 'SENT':
             flash("Submitted! We'll be in touch soon.", 'success')
@@ -528,5 +552,5 @@ if __name__ == '__main__':
     if os.environ.get('FLASK_ENV') == 'production':
        app.run(debug=False)
     else:
-    #    toolbar = DebugToolbarExtension(app)
+       toolbar = DebugToolbarExtension(app)
        app.run(debug=True, port=5003)
