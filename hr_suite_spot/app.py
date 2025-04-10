@@ -99,7 +99,7 @@ def require_state_token(session_key='state_token', query_param='token'):
 @app.route('/')
 @set_state_token()
 def home():
-    return redirect(url_for('index'), token=session['state_token'])
+    return redirect(url_for('index'))
 
 # Landing page
 @app.route("/index")
