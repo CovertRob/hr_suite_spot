@@ -3,7 +3,7 @@ import json
 import logging
 import os
 from uuid import UUID, uuid4
-from flask import Flask, render_template, request, flash, redirect, g, url_for, jsonify
+from flask import Flask, render_template, request, flash, redirect, g, url_for, jsonify, session
 import secrets
 from flask_debugtoolbar import DebugToolbarExtension
 from hr_suite_spot.booking import database, error_utils, booking_service, stripe_integration, mailchimp_integration, gmail
@@ -16,7 +16,6 @@ import stripe
 from stripe import SignatureVerificationError
 from flask_httpauth import HTTPBasicAuth
 from werkzeug.security import generate_password_hash, check_password_hash
-import re
 from pprint import pprint
 logger = logging.getLogger(__name__)
 
@@ -68,12 +67,43 @@ def instantiate_database(f):
         return f(*args, **kwargs)
     return decorated_function
 
+# Decorator to set state token
+def set_state_token(session_key='state_token'):
+    def decorated_func(f):
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            token = secrets.token_urlsafe(32)
+            session[session_key] = token
+            session.modified = True
+            logger.info(f"Set state token: {session_key}: {token}")
+            return f(*args, **kwargs)
+        return wrapper
+    return decorated_func
+
+# Decorator to check state token, factory style
+def require_state_token(session_key='state_token', query_param='token'):
+    def decorated_func(f):
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            token_from_cookie = session.get(session_key)
+            if not token_from_cookie:
+                flash("Invalid or missing state token.", "error")
+                return redirect(url_for('index'))
+            # Do not pop state token because they must persist for purchase workflows through redirects
+            return f(*args, **kwargs)
+        return wrapper
+    return decorated_func
+
+# Future - improved logging w/ decorator and trace-id's
+
 @app.route('/')
+@set_state_token()
 def home():
-    return redirect('/index')
+    return redirect(url_for('index'), token=session['state_token'])
 
 # Landing page
 @app.route("/index")
+@set_state_token()
 def index():
     title = "HR Suite Spot"
     # return render_template('index_2.html', title = title)
@@ -81,17 +111,20 @@ def index():
 
 # Description page about User
 @app.route("/about")
+@set_state_token()
 def get_about():
     return render_template('about.html')
 
 # General overview of each service provided and provide links to book coaching calls/purchase products
 @app.route("/resources")
+@set_state_token()
 def get_resources():
     return render_template('resources.html')
 
 # General contact page. Should include address for company and contact information to include an email.
 # Also include a contact me form submisson for general inquiries
 @app.route("/contact")
+@set_state_token()
 def get_contact():
     return render_template('contact.html')
 
@@ -99,14 +132,25 @@ def get_contact():
 # Admin page for user to submit their availability to the system for appointments to be booked against.
 @app.route("/calendar-availability", methods=['GET'])
 @auth.login_required
+@set_state_token()
 def get_calendar():
     days_of_week = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+    # Record usage while inside protected endpoint for visibility on actions
+    logger.info(
+            "Report on usage of protected /calendar-availability endpoint: | IP: %s | UA: %s | Method: %s | Args: %s | Time: %s",
+            request.remote_addr,
+            request.user_agent.string,
+            request.method,
+            request.args.to_dict(),
+            datetime.now().isoformat()
+        )
     return render_template('calendar.html', days_of_week=days_of_week)
 
 # This route only to be used by admin
 # Look into protecting with secret key
 @app.route("/calendar", methods=["POST"])
 @instantiate_database
+@require_state_token()
 def submit_availability():
     days_of_week = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
     user_timezone = request.form.get('timezone')
@@ -155,6 +199,7 @@ def submit_availability():
         flash("Availability submitted", "success")
     else:
         flash("Availability insertion failed, probably due to format", "error")
+        logger.error(f"An error occurred while submitting admin's availability. Inspect the database.")
         return redirect('/calendar-availability')
     return redirect('/calendar-availability')
 
@@ -162,11 +207,13 @@ def submit_availability():
 # Placeholder for future admin functionality
 @app.route("/calendar/clear/<date>", methods=['POST'])
 @instantiate_database
+@require_state_token()
 def clear_date_availability(date):
     pass
 
 @app.route("/booking/coaching", methods=["GET"])
 @instantiate_database
+@set_state_token()
 def pick_coaching_call():
     # Get availability periods from database
     appointments = util.get_booking_slots(g.db)
@@ -176,6 +223,7 @@ def pick_coaching_call():
     return render_template('booking.html', appointments=appointments_json)
 
 @app.route("/booking/coaching/purchase", methods=["POST"])
+@require_state_token()
 def purchase_coaching_call():
     # Google API requires the 'T':
     # Need to verify query params are clean before passing
@@ -211,6 +259,7 @@ def book_coaching_call(db, datetime_utc: str, booking_name: str, booking_email: 
 @app.errorhandler(404)
 def error_handler(error):
     flash(f"An error occurred.", "error")
+    logger.critical(f"A 404 Error occurred ATT.")
     return redirect("/index")
 
 # Handle in invalid googleapiclient response which raises a custom HttpError
@@ -218,15 +267,13 @@ def error_handler(error):
 def handle_bad_api_call(error):
     # Will need to handle this differently in the future if the google booking fails after the user has already paid
     flash("An error occurred while booking your google appointment. Please re-try.", "error")
+    logger.critical(f"An HTTP Error occurred ATT.")
     return redirect("/booking/coaching")
 
 # Note: this route requires the submission of query parameters
 @app.route('/create-checkout-session', methods=['POST'])
+@require_state_token()
 def create_checkout_session():
-    # Protect endpont from cross-site requests and forgery
-    # origin = request.headers.get("Origin") or request.headers.get("Referer")
-    # if not app.config['DOMAIN'] in origin:
-    #     return jsonify({"error": "Unauthorized Request"}), 403 # Forbidden
 
     # Get query parameters
     checkout_type = request.args.get("checkout_type")
@@ -238,12 +285,15 @@ def create_checkout_session():
         "booking_name": request.args.get("booking_name", ""), 
         "booking_email": request.args.get("booking_email", ""), "selected_datetime_utc": request.args.get("selected_datetime_utc", ""),
         }
-    # Generate client reference id to attach
+    # Generate client reference id to attach for db cross-references
     ref_id = uuid4()
-    # Store potential purchase at the return? endpoint to avoid storng people just checking out the purchase page
 
     # Create and return checkout session with attached meta-data
     payment_processor = stripe_integration.StripeProcessor(app, price_id, amount, customer_info, ref_id)
+
+    # Set Flask session flag to check and protect return route later
+    session['stripe_checkout_initiated'] = True
+    session.modified = True
 
     return payment_processor.get_checkout_session
 
@@ -306,7 +356,7 @@ def stripe_webhook():
         logger.error("Invalid webhook event type")
         return jsonify({"error": "Invalid event type"}), 400
     # Catch all response to avoid timeout
-    logger.info("Catch all response reached on webhook function.")
+    logger.warning("Catch all response reached on webhook function.")
     return jsonify({"status": "success"}), 200
 
 # Fulfillment function
@@ -345,12 +395,13 @@ def fulfill_checkout(event, db) -> bool:
                 event_states = book_coaching_call(db, customer_info.get('selected_datetime_utc'), customer_info.get('booking_name'), customer_info.get('booking_email'), client_ref_id)
                 if event_states.get('status') == 'confirmed':
                     return True
+                logger.error(f"An error occurred booking the coaching call. client_ref_id: {client_ref_id}, customer_info: {customer_info}")
                 return False
             case 'salary_guide':
                 customer_email = checkout_session.get('customer_details').get('email')
                 state = submit_to_mailchimp(customer_email, client_ref_id, 'salary_guide')
                 if not state:
-                    logger.error(f'Error occurred fulfilling salary guide via mailchimp. client_ref_id: {client_ref_id}')
+                    logger.error(f'Error occurred fulfilling salary guide via mailchimp. client_ref_id: {client_ref_id}, customer_info: {customer_info}')
                     return False
                 return True
             case _:
@@ -368,47 +419,68 @@ def checkout_success():
 # Need to figure out how to guard this route as well
 @app.route('/return', methods=['GET'])
 @instantiate_database
+@require_state_token()
 def checkout_return():
-    session = stripe.checkout.Session.retrieve(request.args.get("session_id"))
+    # Verify that no outside entity is trying to interact with the checkout return route by using session flag
+    if not session.get('stripe_checkout_initiated'):
+        logger.warning(
+            "Unauthorized /return access attempt | IP: %s | UA: %s | Method: %s | Args: %s | Time: %s",
+            request.remote_addr,
+            request.user_agent.string,
+            request.method,
+            request.args.to_dict(),
+            datetime.now().isoformat()
+        )
+        flash("Unauthorized.", 'error')
+        return redirect(url_for('index'))
+    # Reset flag by removing
+    session.pop('stripe_checkout_initiated', None)
+
+    stripe_session = stripe.checkout.Session.retrieve(request.args.get("session_id"))
     fulfillment_status = False
     # Log prior generated client_reference_id prior to any actions to store payment attempt to enable manual intervention if needed
-    client_ref_id = session.client_reference_id
-    meta_data_as_json = json.dumps(session.metadata)
+
+    # This is the UUID4 generated by the backend during checkout session creation
+    client_ref_id = stripe_session.client_reference_id
+    meta_data_as_json = json.dumps(stripe_session.metadata)
     # Fulfill product purchased if successful, otherwise return to homepage
-    if session.status == 'open' or session.status == 'expired':
-        logger.error(f"Stripe processor error: payment_stauts: {session.payment_status}, fulfillment status: {fulfillment_status}")
+    if stripe_session.status == 'open' or stripe_session.status == 'expired':
+        logger.error(f"Stripe processor error: payment_stauts: {stripe_session.payment_status}, fulfillment status: {fulfillment_status}, client_ref_id: {client_ref_id}, metadata: {meta_data_as_json}")
         # Store reference to purchase attempt in local db
         g.db.insert_fulfillment(client_ref_id, meta_data_as_json, False)
         flash("Payment failed or cancelled. Please try again.", "error")
         return render_template(url_for('index'))
     
-    if session.status == 'complete' and session.payment_status == 'paid':
+    if stripe_session.status == 'complete' and stripe_session.payment_status == 'paid':
         
         # Storage of reference to purchase will happen in fulfillment function to avoid duplicate database connection with successful payments
-        fulfillment_status = fulfill_checkout(session, g.db)
-        logger.info(f"Stripe processor success: payment_stauts: {session.payment_status}, fulfillment status: {fulfillment_status}")
+        fulfillment_status = fulfill_checkout(stripe_session, g.db)
+        logger.info(f"Stripe processor success: payment_stauts: {stripe_session.payment_status}, fulfillment status: {fulfillment_status}")
         return redirect(url_for('checkout_success'))
     
     # General failure for unknown reason, insert the fulfillment locally for reference
     g.db.insert_fulfillment(client_ref_id, meta_data_as_json, False)
-    logger.error(f"Stripe processor error: payment_stauts: {session.payment_status}, fulfillment status: {fulfillment_status}")
-    flash("An error occurred. Please try again.", "error")
+    logger.error(f"Stripe processor error: payment_stauts: {stripe_session.payment_status}, fulfillment status: {fulfillment_status}")
+    flash("An error occurred. Please try again. If you were charged, contact support please.", "error")
     return render_template(url_for('index'))
 
 @app.route("/checkout")
+@set_state_token()
 def checkout():
-    return render_template('checkout.html')
+    return render_template('checkout.html', title='Checkout')
 
-# Route for GET subscrbe pages
-
+# Route for subscribe forms
 @app.route("/subscribe", methods=['POST'])
+@require_state_token()
 def mailchimp_handler():
     # Get the email and product type being subscribed to, if any, from the args passed
     user_email = request.form.get('user_email')
+    formatted_email = util.sanitize_email(user_email)
     # Right now, this can only be for resume guide or Q&A guide. The salary negotiation guide, since it's a purchase, will be submitted without a tag. Someone just subscribing to mailing list will be submitted with no tag.
     journey_tag = request.form.get('product_subscription', '')
-    submission_status = submit_to_mailchimp(user_email, 'Free Resource', journey_tag)
+    submission_status = submit_to_mailchimp(formatted_email, 'Free Resource', journey_tag)
     if not submission_status: 
+        logger.error(f"An error occurred submitting {formatted_email} to Mailchimp.")
         flash('An error occurred. Please try again', 'error')
         return redirect('/index')
     flash('Submitted! Keep an eye out for more FREE resources and early access to releases this spring.', 'success')
@@ -431,36 +503,47 @@ def submit_to_mailchimp(user_email, client_ref_id, journey_tag=None):
     return False
 
 @app.route('/submit-contact-form', methods=['POST'])
+@require_state_token()
 def submit_contact_form():
     email = request.form.get('email', '').strip()
     phone = request.form.get('phone', '').strip()
-
-    if not re.match("^[^@]+@[^@]+\.[^@]+$", email):
-         flash('Email contains disallowed symbols', 'error')
-         return redirect(url_for('get_contact'))
-    
     name = request.form.get('name', '').strip()
     message = request.form.get('Message', '').strip()
-
-    if not name or not email or not message:
+    # Check that all fields are present
+    if any(field.strip() == '' for field in [email, name, message]):
         flash('Name, email, and message are required', 'error')
         return redirect(url_for('get_contact'))
-    
-    if len(message) > 5000:
-        flash('Message is too big.', 'error')
-        return redirect(url_for('get_contact'))
+    # Check email input
+    formatted_email = util.sanitize_email(email)
+    # Check phone input
+    formatted_phone = util.sanitize_phone(phone)
+    # Check message input
+    formatted_message = util.sanitize_email_body(message)
     
     gmail_service = gmail.GmailIntegration()
-    return_message = gmail_service.send_email(name, email, message, phone)
-    logger.info(f"{return_message}")
-    flash("Submitted! We'll be in touch soon.", 'success')
+    return_message = gmail_service.send_email(name, formatted_email, formatted_message, formatted_phone)
+    logger.info(f"Gmail return from subscribe submission: {return_message}")
+    try:
+        if return_message.get('labelIds', None)[0] == 'SENT':
+            flash("Submitted! We'll be in touch soon.", 'success')
+            return redirect(url_for('get_contact'))
+    except TypeError as e:
+        flash('An error occurred, please try again.', 'error')
+        logger.error(f"Error occurred submitting contact form: Exception: {e.args}, Gmail API response: {return_message}")
+        return redirect(url_for('get_contact'))
+    # If 'SENT' not present and an id was present, return failure and log
+    logger.error(f"Error occurred submitting contact form: Exception: {e.args}, Gmail API response: {return_message}")
+    flash('An error occurred, please try again.', 'error')
     return redirect(url_for('get_contact'))
 
+
 @app.route("/subscribe/<product>", methods=['GET'])
+@set_state_token()
 def render_product_subscription(product):
     return render_template('subscribe_template.html', product_type=product)
 
 @app.route("/coach")
+@set_state_token()
 def render_coaching_call():
     return render_template('coaching_call.html')
 
@@ -471,5 +554,3 @@ if __name__ == '__main__':
     else:
        toolbar = DebugToolbarExtension(app)
        app.run(debug=True, port=5003)
-       
-    

@@ -16,6 +16,8 @@ stripe = "^11.6.0"
 mailchimp-marketing = "^3.0.80"
 flask-httpauth = "^4.8.0"
 gunicorn = "^23.0.0"
+phonenumbers = "^9.0.2"
+email-validator = "^2.2.0"
 
 
 [build-system]
