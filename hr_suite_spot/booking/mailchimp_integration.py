@@ -19,10 +19,10 @@ MC_JOURNEYS = {'Resume Guide': 'Resume Guide',
                'Job Search Checklist': 'Job Search Checklist',
                'coaching call': 'Coaching Call'} 
 # Update this upon push to prod when done testing
-# if os.environ.get('FLASK_ENV', '') == 'production':
-#     AUDIENCE_ID = 'b31d982dc1' # Live Audience ID
-# else:
-AUDIENCE_ID = '2b11290018' # Test Audience ID
+if os.environ.get('FLASK_ENV', '') == 'production':
+    AUDIENCE_ID = 'b31d982dc1' # Live Audience ID
+else:
+    AUDIENCE_ID = '2b11290018' # Test Audience ID
 
 # Current implementation: functions don't return response objects at this time. Won't catch the responses until caching is implemented.
 

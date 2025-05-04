@@ -1,4 +1,9 @@
-const stripe = Stripe("pk_test_51R6J2zH8d4CYhArRbvokzS9EDTy87RR629fc4v5mJ0N087sCERV9tGrpI4w3n9WjNUEf4zFo9tIh0bjR8CyEqC3w00hj3krsQC");
+const isProd = window.location.hostname === 'hrsuitespot.com';
+const stripeKey = isProd
+  ? 'pk_live_51R6J2zH8d4CYhArR056iPK0SSDoUfKd2a02RHmvWFBrGqyEGnpoLU99gC3HwA7uEGTEfchlPlOi867MD3GsFrUgQ00088LW1OY'
+  : "pk_test_51R6J2zH8d4CYhArRbvokzS9EDTy87RR629fc4v5mJ0N087sCERV9tGrpI4w3n9WjNUEf4zFo9tIh0bjR8CyEqC3w00hj3krsQC";
+
+const stripe = Stripe(stripeKey);
 
 initialize();
 
