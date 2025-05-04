@@ -14,7 +14,7 @@ logger = logging.getLogger(__file__)
 
 # Get journey's from here to put another layer between form injection and API
 MC_JOURNEYS = {'Resume Guide': 'Resume Guide',
-               'salary_guide': 'Salary Guide', # Paid
+               'salary_guide': 'Salary Negotiation Guide', # Paid
                'Interview Q&A Guide': 'Interview Q&A',
                'Job Search Checklist': 'Job Search Checklist',
                'coaching call': 'Coaching Call'} 
