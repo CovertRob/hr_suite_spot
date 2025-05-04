@@ -57,8 +57,13 @@ def verify_password(username, password):
 
 # Static Stripe price-id's (short-term fix):
 # To add config file for this later
+# if os.environ.get('FLASK_ENV') == 'production':
+#     # Live environment price
+#     STRIPE_PRICE_IDS = {"coaching_call": "price_1RKucIH8d4CYhArRHXFepWtG",
+#                     "salary_guide": "price_1RKuc7H8d4CYhArRZCt2wQKn"}
+# else:
 STRIPE_PRICE_IDS = {"coaching_call": "price_1R6LuhH8d4CYhArR8yogdHvb",
-                    "salary_guide": "price_1R91kAH8d4CYhArRjcIkKXvy"}
+                    "salary_guide": "price_1RKuEtH8d4CYhArRVnpdf9sy"}
 
 # Use decorator to create g.db instance within request context window for functions that require it to conserve resources and prevent N +1 instances
 def instantiate_database(f):
