@@ -16,7 +16,9 @@ logger = logging.getLogger(__file__)
 MC_JOURNEYS = {'Resume Guide': 'Resume Guide',
                'salary_guide': 'Salary Guide', # Paid
                'Interview Q&A Guide': 'Interview Q&A',
-               'Job Search Checklist': 'Job Search Checklist'} # Update this upon push to prod
+               'Job Search Checklist': 'Job Search Checklist',
+               'coaching call': 'Coaching Call'} 
+# Update this upon push to prod when done testing
 # if os.environ.get('FLASK_ENV', '') == 'production':
 #     AUDIENCE_ID = 'b31d982dc1' # Live Audience ID
 # else:
@@ -146,14 +148,9 @@ class MailChimpIntegration:
     def submit_member_to_mailchimp(self, email, product_key: str=None):
         """
         Submit a user to MailChimp audience. If tags are included, adds tags to trigger the associated journey & product delivery.
-
-        Product key can only be the following:
-        'resume_guide' (currently for testing)
-        'Q&A_guide'
-
         """
         try:
-            # PUT to list. This method is idempotic.
+            # PUT member to list. This method is idempotic.
             self._add_member_without_tags(AUDIENCE_ID, email, "subscribed")
             # If tags present, POST tag to member
             if product_key:

@@ -21,7 +21,7 @@
           <span class="cs-topper">Coaching Call</span>
           <h2 class="cs-title">Book Your Call!</h2>
           <!--Form-->
-          <form class="cs-form" id="appointment-form" name="Contact Form" method="post" action="/booking/coaching/purchase">
+          <form class="cs-form" id="appointment-form" name="Contact Form" method="post" action="/booking/coaching/purchase" enctype="multipart/form-data">
             <input type="hidden" id="coaching_call" name="checkout_type" value="coaching_call">
             <input type="hidden" id="amount" name="checkout_amount" value="1">
             <input type="hidden" id="selected-datetime" name="appointment_datetime">
@@ -32,7 +32,7 @@
               <label class="cs-label cs-email">
                   Email
                   <input class="cs-input" required type="email" id="email-1184" name="booking_email" placeholder="Email" required>
-              </label>
+              </label>  
               <label class="cs-label">Appointment Date & Time
                 <input class="cs-input" type="text" id="appointment-picker" data-appointments='{{ appointments|safe }}' placeholder="Select appointment date">
               </label>

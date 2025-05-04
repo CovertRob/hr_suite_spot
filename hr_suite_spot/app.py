@@ -280,6 +280,9 @@ def create_checkout_session():
     checkout_type = request.args.get("checkout_type")
     price_id = STRIPE_PRICE_IDS[checkout_type]
     amount = int(request.args.get("checkout_amount")) # This is a quantity, not price. Required
+
+    # Need to get client_ref_id here from query pass
+
     # Not all customer info query params may exist, depends on purchase being made
     customer_info = {
         "checkout_type": checkout_type, # Required
@@ -395,6 +398,12 @@ def fulfill_checkout(event, db) -> bool:
                 # Function returns meeting event_states
                 event_states = book_coaching_call(db, customer_info.get('selected_datetime_utc'), customer_info.get('booking_name'), customer_info.get('booking_email'), client_ref_id)
                 if event_states.get('status') == 'confirmed':
+                    # Submit info the MailChimp to send info email about call after it's been confirmed book via google api.
+                    customer_email = checkout_session.get('customer_details').get('email')
+                    state = submit_to_mailchimp(customer_email, client_ref_id, 'coaching call')
+                    if not state:
+                        logger.error(f'Error occurred sending coaching call client to MailChimp. client_ref_id: {client_ref_id}, customer_info: {customer_info}')
+                        return False
                     return True
                 logger.error(f"An error occurred booking the coaching call. client_ref_id: {client_ref_id}, customer_info: {customer_info}")
                 return False
@@ -417,7 +426,6 @@ def checkout_success():
     flash("Thanks for your purchase! You'll receive an email with the details!", 'success')
     return redirect(url_for('index'))
 
-# Need to figure out how to guard this route as well
 @app.route('/return', methods=['GET'])
 @instantiate_database
 @require_state_token()
@@ -455,8 +463,12 @@ def checkout_return():
     if stripe_session.status == 'complete' and stripe_session.payment_status == 'paid':
         
         # Storage of reference to purchase will happen in fulfillment function to avoid duplicate database connection with successful payments
+        # Fulfillmment status can be false if any of the api calls fail: stripe, google calendar booking, mailchimp
         fulfillment_status = fulfill_checkout(stripe_session, g.db)
-        logger.info(f"Stripe processor success: payment_stauts: {stripe_session.payment_status}, fulfillment status: {fulfillment_status}")
+        if fulfillment_status:
+            logger.info(f"Stripe processor success: payment_status: {stripe_session.payment_status}, fulfillment status: {fulfillment_status}")
+        else:
+            logger.error(f"Stripe processor error or api error: payment_status: {stripe_session.payment_status}, fulfillment status: {fulfillment_status}")
         return redirect(url_for('checkout_success'))
     
     # General failure for unknown reason, insert the fulfillment locally for reference
