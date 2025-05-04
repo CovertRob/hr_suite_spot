@@ -20,6 +20,16 @@
       <div class="cs-content">
           <span class="cs-topper">Coaching Call</span>
           <h2 class="cs-title">Book Your Call!</h2>
+          <div class="cs-form description">
+            <p>During a career coaching call with me, we will delve into your situation or the specific topic you need assistance with. Before the call, you will share ample details so that we can maximize our time discussing solutions and determining the next steps to propel you in the right direction. As every individual case is different, you may receive tailored verbiage, coaching for relevant conversations, and even access to free resources that align with your particular circumstances. Some common call themes:</p>
+              <ul class="description-list">
+                <li>Salary Negotiation</li>
+                <li>Promotions</li>
+                <li>Interview Prep</li>
+                <li>Job Search</li>
+                <li>Workplace Conflict</li>
+              </ul>
+          </div>
           <!--Form-->
           <form class="cs-form" id="appointment-form" name="Contact Form" method="post" action="/booking/coaching/purchase" enctype="multipart/form-data">
             <input type="hidden" id="coaching_call" name="checkout_type" value="coaching_call">
@@ -36,21 +46,11 @@
               <label class="cs-label">Appointment Date & Time
                 <input class="cs-input" type="text" id="appointment-picker" data-appointments='{{ appointments|safe }}' placeholder="Select appointment date">
               </label>
+              <!-- Add this where you want to display the timezone information -->
+              <div id="timezone-info" class="timezone-display"></div>
               <div id="validation-message" style="color: red; display: none;">Please select a valid appointment time.</div>
               <button class="cs-button-solid cs-submit" type="submit">Make an Appointment</button>
           </form>
-           <!-- Add this where you want to display the timezone information -->
-          <div id="timezone-info" class="timezone-display"></div>
-          <div class="cs-form description">
-            <p>During a career coaching call with me, we will delve into your situation or the specific topic you need assistance with. Before the call, you will share ample details so that we can maximize our time discussing solutions and determining the next steps to propel you in the right direction. As every individual case is different, you may receive tailored verbiage, coaching for relevant conversations, and even access to free resources that align with your particular circumstances. Some common call themes:</p>
-              <ul class="description-list">
-                <li>Salary Negotiation</li>
-                <li>Promotions</li>
-                <li>Interview Prep</li>
-                <li>Job Search</li>
-                <li>Workplace Conflict</li>
-              </ul>
-        </div>
           <!-- Include flatpickr CSS and JS -->
           <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
           <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
