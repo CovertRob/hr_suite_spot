@@ -100,7 +100,7 @@
     #content-1450 .cs-content.with-pic {
       flex-direction: column;
       gap: 3rem;
-      align-items: flex-start;
+      
 
     }
 
@@ -180,6 +180,7 @@
     }
 
     #content-1450 .cs-button-solid.dynamic {
+      margin-top: 1rem;
       line-height: 1.5;
     }
 
