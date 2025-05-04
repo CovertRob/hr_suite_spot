@@ -19,7 +19,7 @@
             </p>
         </div>
         <!-- Form -->
-        <form id="cs-form-490" name="Contact Form" method="post" action="/submit-contact-form">
+        <form id="cs-form-490" name="Contact Form" method="post" action="/submit-contact-form" enctype="multipart/form-data">
             <label class="cs-label">
                 Name
                 <input class="cs-input" required type="text" id="name-490" name="name" placeholder="John/Jane Doe">
@@ -37,7 +37,11 @@
                 Message
                 <textarea class="cs-input" required name="Message" id="message-490" placeholder="Hello, I’m interested in..."></textarea>
             </label>
-            <button class="cs-button-solid" type="submit">Submit Message Now</button>
+            <label class="cs-label">
+                Optional File Upload (PDF only)
+                <input class="cs-input" type="file" id="pdfFile" name="pdfFile" accept="application/pdf">
+            </label>       
+            <button class="cs-button-solid" type="submit">Submit Message</button>
         </form>
     </div>
 </section>

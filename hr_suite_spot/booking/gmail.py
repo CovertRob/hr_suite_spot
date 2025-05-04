@@ -39,7 +39,7 @@ class GmailIntegration:
         return api_key_path
     
 
-    def create_message_with_attachment(self, to, from_email, subject, body, file_path):
+    def create_message(self, to, from_email, subject, body):
         message = MIMEMultipart()
         message['to'] = to
         message['from'] = from_email
@@ -48,23 +48,14 @@ class GmailIntegration:
         # Add plain text part
         message.attach(MIMEText(body, 'plain'))
 
-        # Add attachment
-        if file_path is not None:
-            with open(file_path, 'rb') as f:
-                part = MIMEBase('application', 'pdf')
-                part.set_payload(f.read())
-                encoders.encode_base64(part)
-                part.add_header('Content-Disposition', 'attachment', filename='resume_guide.pdf')
-                message.attach(part)
-
         # Encode to base64 for Gmail API
         raw = base64.urlsafe_b64encode(message.as_bytes()).decode()
         return {'raw': raw}
 
     # Attachment to remain None until document uploading implemented
-    def send_email(self, name: str, email: str, body: str, phone: str, attachment: Path=None):
+    def send_email(self, name: str, email: str, body: str, phone: str):
         try:
-            message = self.create_message_with_attachment('contact_submissions@hrsuitespot.com', 'cto@hrsuitespot.com', f'Contact From: {name} {phone} {email}', body, attachment)
+            message = self.create_message('contact_submissions@hrsuitespot.com', 'cto@hrsuitespot.com', f'Contact From: {name} {phone} {email}', body)
             send_message = (self.service.users().messages().send(userId='me', body=message).execute())
         except HttpError as e:
             logger.error(f'An error occurred: {e}')

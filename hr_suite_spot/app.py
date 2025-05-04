@@ -6,7 +6,7 @@ from uuid import UUID, uuid4
 from flask import Flask, render_template, request, flash, redirect, g, url_for, jsonify, session
 import secrets
 from flask_debugtoolbar import DebugToolbarExtension
-from hr_suite_spot.booking import database, error_utils, booking_service, stripe_integration, mailchimp_integration, gmail
+from hr_suite_spot.booking import database, error_utils, booking_service, stripe_integration, mailchimp_integration, gmail, drive_integration
 from hr_suite_spot.booking import booking_utils as util
 from functools import wraps
 from werkzeug.datastructures import MultiDict
@@ -17,6 +17,7 @@ from stripe import SignatureVerificationError
 from flask_httpauth import HTTPBasicAuth
 from werkzeug.security import generate_password_hash, check_password_hash
 from pprint import pprint
+from werkzeug.utils import secure_filename
 logger = logging.getLogger(__name__)
 
 def create_app():
@@ -266,9 +267,9 @@ def error_handler(error):
 @app.errorhandler(HttpError)
 def handle_bad_api_call(error):
     # Will need to handle this differently in the future if the google booking fails after the user has already paid
-    flash("An error occurred while booking your google appointment. Please re-try.", "error")
-    logger.critical(f"An HTTP Error occurred ATT.")
-    return redirect("/booking/coaching")
+    flash("An error occurred in your submission. Please re-try.", "error")
+    logger.critical(f"An HTTP Error occurred.")
+    return redirect("/index")
 
 # Note: this route requires the submission of query parameters
 @app.route('/create-checkout-session', methods=['POST'])
@@ -509,6 +510,8 @@ def submit_contact_form():
     phone = request.form.get('phone', '').strip()
     name = request.form.get('name', '').strip()
     message = request.form.get('Message', '').strip()
+    uploaded_file = request.files.get('pdfFile')
+
     # Check that all fields are present
     if any(field.strip() == '' for field in [email, name, message]):
         flash('Name, email, and message are required', 'error')
@@ -519,6 +522,21 @@ def submit_contact_form():
     formatted_phone = util.sanitize_phone(phone)
     # Check message input
     formatted_message = util.sanitize_email_body(message)
+    # Upload file if it is present
+    view_link = None
+    pprint(request.files)
+    if uploaded_file:
+        if uploaded_file.content_type != "application/pdf":
+            flash("File upload failure. Only PDF's are allowed.", 'error')
+            return redirect(url_for('get_contact'))
+        
+        drive = drive_integration.DriveIntegration()
+        safe_name = secure_filename(uploaded_file.filename)
+        logger.info("Uploading file now.")
+        upload_status, view_link = drive.upload_file(uploaded_file, safe_name, name)
+        logger.info("Upload complete")
+    if view_link:
+        formatted_message += f"User File Upload: {view_link}"
     
     gmail_service = gmail.GmailIntegration()
     return_message = gmail_service.send_email(name, formatted_email, formatted_message, formatted_phone)
