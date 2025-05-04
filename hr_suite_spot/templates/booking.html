@@ -41,7 +41,15 @@
           </form>
            <!-- Add this where you want to display the timezone information -->
           <div id="timezone-info" class="timezone-display"></div>
-
+          <p class="cs-label" style="font-size: large;">During a career coaching call with me, we will delve into your situation or the specific topic you need assistance with. Before the call, you will share ample details so that we can maximize our time discussing solutions and determining the next steps to propel you in the right direction. As every individual case is different, you may receive tailored verbiage, coaching for relevant conversations, and even access to free resources that align with your particular circumstances. Some common call themes:
+            <ul>
+              <li>Salary Negotiation</li>
+              <li>Promotions</li>
+              <li>Interview Prep</li>
+              <li>Job Search</li>
+              <li>Workplace Conflict</li>
+            </ul>
+          </p>
           <!-- Include flatpickr CSS and JS -->
           <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
           <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
@@ -52,7 +60,7 @@
 
           <!-- Custom script using flatpickr and timezone management -->
           <script src="{{ url_for('static', filename='javascript/appointment_picker.js') }}"></script>
-          </div>
+        </div>
         <picture class="cs-background">
             <!--Mobile Image-->
             <source media="(max-width: 600px)" srcset="{{ url_for('static', filename='images/WEBsize-20.jpg') }}">
