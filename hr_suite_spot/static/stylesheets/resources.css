@@ -55,6 +55,7 @@
     position: relative;
     /* On mobile, let the image auto-size.
        If needed, set a height with clamp() to reduce mobile height */
+    height: clamp(100px, 60vw, 300px);
 }
   
 .sbs-content-box .cs-picture img {
@@ -70,8 +71,6 @@
     padding-top: 10rem; /* adjust as needed */
 }
 
-  
-  
 /* ------------------------------------------ */
 /*         Tablet & Desktop (48rem+)         */
 /* ------------------------------------------ */
