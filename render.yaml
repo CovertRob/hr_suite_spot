@@ -6,7 +6,7 @@ services:
   name: hr_suite_spot
   runtime: python
   repo: https://github.com/CovertRob/hr_suite_spot
-  plan: Professional
+  plan: Starter
   envVars:
   - fromGroup: Live HRSS ENV
   region: oregon
@@ -21,7 +21,7 @@ version: "1"
 
 databases:
   - name: HRSS_DB                 # Render resource name
-    plan: Professional            # live plan
+    plan: Starter           # live plan
     region: oregon
     databaseName: hrss_db         # initial DB name
     user: hrss_db_user            # initial DB user
