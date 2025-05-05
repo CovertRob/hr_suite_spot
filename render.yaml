@@ -21,7 +21,7 @@ version: "1"
 
 databases:
   - name: HRSS_DB                 # Render resource name
-    plan: Starter           # live plan
+    plan: Pro-4gb           # live plan
     region: oregon
     databaseName: hrss_db         # initial DB name
     user: hrss_db_user            # initial DB user
