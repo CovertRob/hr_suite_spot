@@ -6,7 +6,7 @@ from uuid import UUID, uuid4
 from flask import Flask, render_template, request, flash, redirect, g, url_for, jsonify, session
 import secrets
 from flask_debugtoolbar import DebugToolbarExtension
-from hr_suite_spot.booking import database, error_utils, booking_service, stripe_integration, mailchimp_integration, gmail, drive_integration
+from hr_suite_spot.booking import database, booking_service, stripe_integration, mailchimp_integration, gmail, drive_integration
 from hr_suite_spot.booking import booking_utils as util
 from functools import wraps
 from werkzeug.datastructures import MultiDict
@@ -150,79 +150,68 @@ def get_calendar():
             request.args.to_dict(),
             datetime.now().isoformat()
         )
-    return render_template('calendar.html', days_of_week=days_of_week)
+    return render_template('admin_input.html', days_of_week=days_of_week)
 
-# This route only to be used by admin
-# Look into protecting with secret key
-@app.route("/calendar", methods=["POST"])
+@app.route("/admin/availability", methods=["GET", "POST", "DELETE"])
 @instantiate_database
-@require_state_token()
-def submit_availability():
-    days_of_week = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-    user_timezone = request.form.get('timezone')
-    pprint(user_timezone)
-    # Separate out availability period data so the "re-occurring" boolean values don't mess with time format validation functions
-    availability_data = MultiDict()
-    for k, v in request.form.items(multi=True):
-        if k in days_of_week:
-            availability_data.add(k, v)
-    # Separate out name:value pairs from form submission. Note that javascript on the front end removes the hidden "false" submission if true is checked
-    reoccurring_data = {k: v for k, v in request.form.items() if "repeat" in k}
-    # Need to check / sanitize input here, create util function
-    # Currently only implementing one main avail period per day
-    
-    # With MultiDict type, use getlist to create a list for each day of the week with the begin and end time periods. Ex: {"Monday": ['begin', 'end']}
-    if not util.validate_availability_input_format(availability_data):
-        flash("Availability is not formatted correctly.", "error")
-        return redirect('/calendar-availability')
-    
-    # Generate availability periods, reoccurring for those marked
-    # Input here is in MultiDict form, outputs a MultiDict
-    generated_availability = util.generate_availability(availability_data, reoccurring_data, 2)
-    
-    # Convert to official ISO-format with timezone info and verify no inputs in past. Currently hard-coded for -8 PST.
-    # Use try-catch block with convert_to_iso_with_tz
-    try:
-        converted_input = util.convert_to_iso_with_tz(generated_availability, user_timezone)
-    except error_utils.TimeValidationError as e:
-        message = e.message # get the message passed
-        flash(f"{message}", "error")
-        return redirect('/calendar-availability')
-    
-    # Generate the appointment slots for insertion. Currently hardcoded for 30 minutes.
-    appointments = MultiDict()
-    for day, period in converted_input.items(multi=True):
-        # Note that the _split_into_30min_segments() function returns a list of individual datetimes in 30 minute segments between two datetimes, NOT a begin to end period of two datetime objects by 30 minutes.
+@auth.login_required
+def api_admin_availability():
+    if request.method == "GET":
+        rows = g.db.retrieve_availability_periods()
+        return jsonify([
+            {
+                "id":      row["id"],               # PK from table
+                "start":   row["start"],
+                "end":     row["end"]
+            } for row in rows
+        ])
+    elif request.method == "POST":
+        payload = request.get_json(force=True) or {}
+        slots = payload.get("slots", [])
 
-        slots_in_30 = util.split_into_30min_segments(datetime.fromisoformat(period[0]), datetime.fromisoformat(period[1]))
-        # Add in the end period for storage in db
-        appointments.add(day, [[slot.isoformat(' '), (slot + timedelta(minutes=30)).isoformat(' ')] for slot in slots_in_30])
-    
-    # Insert the availability into the local database for each day of the week
-    # If fails, logs database error and returns false
-    
-    if g.db.insert_availability(appointments):
-        flash("Availability submitted", "success")
-    else:
-        flash("Availability insertion failed, probably due to format", "error")
-        logger.error(f"An error occurred while submitting admin's availability. Inspect the database.")
-        return redirect('/calendar-availability')
-    return redirect('/calendar-availability')
+        # perform time checks here
+        user_tz = payload.get("tz", "UTC") # fallback if omitted
+        # validate
+        if not util.slots_are_valid(slots, timezone=user_tz):
+            return jsonify({"error": "Invalid time selection"}), 400
+        
+        appointments = []
+        for slot in slots:
+            # Note that the _split_into_30min_segments() function returns a list of individual datetimes in 30 minute segments between two datetimes, NOT a begin to end period of two datetime objects by 30 minutes.
 
-
-# Placeholder for future admin functionality
-@app.route("/calendar/clear/<date>", methods=['POST'])
-@instantiate_database
-@require_state_token()
-def clear_date_availability(date):
-    pass
+            start = slot['start'].replace("Z", "+00:00")
+            end = slot['end'].replace("Z", "+00:00")
+            slots_in_30 = util.split_into_30min_segments(datetime.fromisoformat(start), datetime.fromisoformat(end))
+            # Add in the end period for storage in db
+            appointments += [[slot.isoformat(' '), (slot + timedelta(minutes=30)).isoformat(' ')] for slot in slots_in_30]
+        g.db.insert_availability(appointments)
+        return ("", 204)
+    
+    elif request.method == "DELETE":
+        payload = request.get_json(force=True) or {}
+        ids = payload.get("ids")
+        rng = payload.get("range")
+        status = None
+        if payload.get("all") is True:
+            status = g.db.delete_all_availability()
+        if ids:
+            status = g.db.delete_availability_by_id(ids)
+        elif rng:
+            status = g.db.delete_availability_range(rng["start"], rng["end"])
+        if status:
+                flash("Success", "success")
+                return "", 204
+        flash("An error occurred, please retry or contact your boyfrined.", "error")
+        return "", 500
+    return jsonify({"error": "Not allowed"}), 400
 
 @app.route("/booking/coaching", methods=["GET"])
 @instantiate_database
 @set_state_token()
 def pick_coaching_call():
     # Get availability periods from database
-    appointments = util.get_booking_slots(g.db)
+    appointments = util.get_booking_slots(g.db) # will need to check this due to table change
+    pprint(appointments)
     # Remove the T for easier management on front-end and convert to ISO str
     appointments_in_iso = [slot.isoformat().replace('T', ' ') for day in appointments for slot in day]
     appointments_json = dumps(appointments_in_iso)
@@ -234,6 +223,7 @@ def purchase_coaching_call():
     # Google API requires the 'T':
     # Need to verify query params are clean before passing
     selected_datetime_utc = request.form['selected_datetime_utc'].replace(' ', 'T')
+
     booking_name = request.form['booking_name']
     booking_email = request.form['booking_email']
     checkout_type = "coaching_call"
@@ -388,7 +378,7 @@ def fulfill_checkout(event, db) -> bool:
 
     client_ref_id = checkout_session.client_reference_id
     meta_data_as_json = json.dumps(checkout_session.metadata)
-    # If the record already exists, Postgres function will return the boolean fulfillment status, otherwise will insert new record and return fulfillment status as False
+    # If the record already exists, Postgres function will return the boolean fulfillment status, otherwise will insert new record and return fulfillment status as False. This is to make the function safe to double call with web-hook.
     fulfillment_status = db.check_or_insert_fulfillment(client_ref_id, meta_data_as_json, False)
 
     payment_status = checkout_session.payment_status
@@ -397,7 +387,6 @@ def fulfill_checkout(event, db) -> bool:
     # Check the Checkout Session's payment_status property
     # to determine if fulfillment should be peformed
     if payment_status != 'unpaid' and not fulfillment_status:
-        # TODO: Perform fulfillment of the line items
         match fulfillment_action_type:
             case 'coaching_call':
                 # Function returns meeting event_states
@@ -433,7 +422,7 @@ def checkout_success():
 
 @app.route('/return', methods=['GET'])
 @instantiate_database
-@require_state_token()
+# Remove require state token to prevent redirect bugs 05/05/2025
 def checkout_return():
     # Verify that no outside entity is trying to interact with the checkout return route by using session flag
     if not session.get('stripe_checkout_initiated'):

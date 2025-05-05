@@ -32,6 +32,36 @@
     <button type="submit">Submit Availability</button>
   </form>
 </div>
+<form class="cs-form" id="appointment-form" name="Contact Form" method="post" action="/booking/coaching/purchase" enctype="multipart/form-data">
+  <input type="hidden" id="coaching_call" name="checkout_type" value="coaching_call">
+  <input type="hidden" id="amount" name="checkout_amount" value="1">
+  <input type="hidden" id="selected-datetime" name="appointment_datetime">
+    <label class="cs-label">
+        Name
+        <input class="cs-input" required type="text" id="name-1184" name="booking_name" placeholder="Name" required>
+    </label>
+    <label class="cs-label cs-email">
+        Email
+        <input class="cs-input" required type="email" id="email-1184" name="booking_email" placeholder="Email" required>
+    </label>  
+    <label class="cs-label">Appointment Date & Time
+      <input class="cs-input" type="text" id="appointment-picker" data-appointments='{{ appointments|safe }}' placeholder="Select appointment date">
+    </label>
+    <!-- Add this where you want to display the timezone information -->
+    <div id="timezone-info" class="timezone-display"></div>
+    <div id="validation-message" style="color: red; display: none;">Please select a valid appointment time.</div>
+    <button class="cs-button-solid cs-submit" type="submit">Make an Appointment</button>
+</form>
+<!-- Include flatpickr CSS and JS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+<!-- Scripts needed for timezone management -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.34/moment-timezone-with-data.min.js"></script>
+
+<!-- Custom script using flatpickr and timezone management -->
+<script src="{{ url_for('static', filename='javascript/admin_input.js') }}"></script>
 </section>
 <script src="{{ url_for('static', filename='javascript/calendar.js') }}"></script>
 {% endblock %}

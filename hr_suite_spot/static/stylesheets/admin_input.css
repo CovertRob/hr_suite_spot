@@ -1,0 +1,92 @@
+/* ---------- root text vars ---------- */
+:root {
+    --bg: #f8fafc;
+    --card-bg: #ffffff;
+    --radius: 0.75rem;
+    --shadow: 0 4px 12px rgb(0 0 0 / 0.05);
+    --blue:   #2563eb;
+    --blue-h: #1d4ed8;
+    --red:    #dc2626;
+    --red-h:  #b91c1c;
+  
+    font-family: system-ui, sans-serif;
+    line-height: 1.4;
+  }
+  
+  /* ---------- dedicated container so we don’t fight site-wide body/grid styles ---------- */
+  #admin-container {
+    display: grid;
+    gap: 2rem;
+    padding: 2rem clamp(1rem, 4vw, 3rem);
+    background: var(--bg);
+  }
+  
+  /* ---------- headings ---------- */
+  #admin-container h2 {
+    margin: 0 0 .5rem;
+    font-size: 1.5rem;
+  }
+  
+  /* ---------- cards ---------- */
+  #admin-container form,
+  #admin-container section {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1.5rem;
+  }
+  
+  /* ---------- form elements ---------- */
+  #admin-container label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-block: 0.5rem;
+  }
+  
+  #admin-container input,
+  #admin-container select,
+  #admin-container button {
+    padding: 0.45rem 0.7rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+  }
+  
+  /* ---------- buttons ---------- */
+  #admin-container button {
+    cursor: pointer;
+    background: var(--blue);
+    color: #fff;
+    transition: background 0.2s;
+  }
+  
+  #admin-container button:hover { background: var(--blue-h); }
+  
+  #admin-container .danger        { background: var(--red); }
+  #admin-container .danger:hover  { background: var(--red-h); }
+  
+  /* ---------- flex helper ---------- */
+  #admin-container .inline {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  
+  /* ---------- table ---------- */
+  #admin-container table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  #admin-container th,
+  #admin-container td {
+    border: 1px solid #e5e7eb;
+    padding: 0.45rem;
+    text-align: left;
+    font-size: 0.95rem;
+  }
+  
+  #admin-container th { background: #f1f5f9; }
+  
