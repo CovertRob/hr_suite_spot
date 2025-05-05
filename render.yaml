@@ -20,13 +20,8 @@ services:
 version: "1"
 
 databases:
-  - type: postgres
-    name: HRSS_DB                 # Render resource name
+  - name: HRSS_DB                 # Render resource name
     plan: Professional            # live plan
     region: oregon
     databaseName: hrss_db         # initial DB name
     user: hrss_db_user            # initial DB user
-
-    # A *preview* DB (one per branch) will be created automatically
-    previews:
-      plan: starter                  # or "starter" if you need more RAM/disk
