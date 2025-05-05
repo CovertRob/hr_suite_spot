@@ -33,9 +33,10 @@ document.addEventListener('DOMContentLoaded', function() {
   // Function to update available times based on timezone
   function updateAvailableTimes(utcTimes, timezone) {
       // Convert UTC times to the user's timezone
-      const localTimes = utcTimes.map(timeStr => {
-          return moment.utc(timeStr).tz(timezone).format('YYYY-MM-DD hh:mm A');
-      });
+      const localTimes = utcTimes
+      .map(t => moment.utc(t).tz(timezone))          // keep as moment objs
+      .sort((a, b) => a - b)                         // ➊ sort locally
+      .map(m => m.format('YYYY-MM-DD hh:mm A'));     // ➋ then format
       
       // Create a mapping of dates to available times
       const availableTimeMap = {};
@@ -127,6 +128,13 @@ document.addEventListener('DOMContentLoaded', function() {
           document.getElementById("validation-message").style.display = "block";
           return false;
       }
+
+        const diffHours = moment.utc(convertedToUTC).diff(moment.utc(), "hours");
+        if (diffHours < 12) {
+        event.preventDefault();
+        alert("Please choose a time at least 12 hours from now.");
+        return false;
+    }
       
       // Store the selected time in UTC for submission
       const utcDateTimeInput = document.createElement('input');

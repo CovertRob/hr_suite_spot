@@ -15,9 +15,7 @@ logger = logging.getLogger(__name__)
 class DatabasePersistence:
     def __init__(self):
         self._setup_schema()
-        # Store id's for days of the week from database upon initial setup since they are used throughout the module to reduce n+1 queries.
-        # Stored in dictionary format {"Monday": 1}
-        self._days_of_week_ids = self._identify_days_of_week_ids()
+        # remove call to get days of week id's
 
     @contextmanager
     def _database_connect(self):
@@ -35,51 +33,79 @@ class DatabasePersistence:
         finally:
             connection.close()
 
-    def _identify_days_of_week_ids(self):
+    def insert_availability(self, availability: list):
         """
-        Internally used to identify the id's from the database for the days of the week since sequences in local database are not guaranteed to be sequential due to Postgres sequence/nextval behavior.
-        """
-        query = "SELECT day_of_week, id FROM availability_day"
-        logger.info("Executing query: %s", query)
-        with self._database_connect() as conn:
-            with conn.cursor(cursor_factory=DictCursor) as cursor:
-                cursor.execute(query)
-                # Key values here are "day_of_week" and "id" respectively
-                ids = cursor.fetchall()
-        # Extract id's into regular dictionary
-        ids_to_dict = {pair['day_of_week']: pair['id'] for pair in ids}
-        return ids_to_dict
-
-    def insert_availability(self, availability: MultiDict):
-        """
-        Inserts the availability given for each day of the week into the local database for storage and display for appointment booking.
+        Inserts the availability into the local database for storage and display for appointment booking.
 
         Does not interact outside of the local environment. Connections to external google cloud calenar API are handled in the external calendar module.
 
         Returns True if insert successful, false otherwise
         """
-
-        # To-do: Database needs to overwrite availability for a given day of the week when data is resubmitted by user
-        
-        # Define queries to insert parameters
         # Insertion query
-        query = "INSERT INTO availability_period (begin_period, end_period, availability_day_id) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING;"
-        # Clearing query
-        clearing_query = "DELETE FROM availability_period WHERE is_booked = FALSE;"
+        query = "INSERT INTO availability_period (begin_period, end_period) VALUES (%s, %s) ON CONFLICT DO NOTHING;"
         logger.info("Executing query: %s", query)
         with self._database_connect() as conn:
             with conn.cursor() as cursor:
-                # First, delete all availability present that is not currently booked for the days that are being overwritten
-                cursor.execute(clearing_query)
-                for day_of_week, appointments in availability.items(multi=True):
-                    for slot in appointments:
-                        begin_period, end_period = slot
-                        # Use a try-catch to return false if any of the availability inserts fail so not to interrup user session
-                        try:
-                            cursor.execute(query, (begin_period, end_period, self._days_of_week_ids.get(f"{day_of_week}"))) # Future - remove n +1 query
-                        except psycopg2.DatabaseError as e:
-                            logger.info("Insertion failed with error: %s", e.args)
-                            return False
+                for slots in availability:
+                    pprint(slots)
+                    try:
+                        cursor.execute(query, (slots[0], slots[1]))
+                    except psycopg2.DatabaseError as e:
+                        logger.info("Insertion failed with error: %s", e.args)
+                        return False
+        return True
+    
+    def delete_availability_by_id(self, availability_id: int):
+        """
+        Deletes a single availability by it's unique id.
+        """
+        query = """DELETE FROM availability_period WHERE id = %s"""
+        logger.info("Executing query: %s", query)
+        with self._database_connect() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("SET TIME ZONE 'UTC'")
+                try:
+                    cursor.execute(query, (availability_id))
+                except psycopg2.DatabaseError as e:
+                    logger.error(f"Booking deletion failed: {e.args}")
+                    return False
+        return True      
+    
+    def delete_availability_range(self, start: str, end: str):
+        """
+        Deletes availability periods based on a given date range.
+        start and end are both ISO-8601 strings
+        """
+        query =     """DELETE FROM availability_period
+                        WHERE begin_period >= %s
+                        AND end_period   <=  %s
+                        AND is_booked    = FALSE;"""
+        logger.info("Executing query: %s", query)
+        with self._database_connect() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("SET TIME ZONE 'UTC'")
+                try:
+                    cursor.execute(query, (start, end))
+                except psycopg2.DatabaseError as e:
+                    logger.error(f"Booking deletion failed: {e.args}")
+                    return False
+        return True
+    
+    def delete_all_availability(self):
+        """
+        Deletes all availability in the db except for booked slots.
+        """
+        query = """DELETE FROM availability_period
+                    WHERE is_booked = FALSE"""
+        logger.info("Executing query: %s", query)
+        with self._database_connect() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute("SET TIME ZONE 'UTC'")
+                try:
+                    cursor.execute(query)
+                except psycopg2.DatabaseError as e:
+                    logger.error(f"Booking deletion failed: {e.args}")
+                    return False
         return True
     
     def retrieve_availability_periods(self):
@@ -88,7 +114,7 @@ class DatabasePersistence:
 
         Returns raw table data in DictRow format.
         """
-        query = 'SELECT day_of_week, begin_period AS start, end_period AS end FROM availability_period JOIN availability_day ON availability_day_id = availability_day.id WHERE is_booked = FALSE GROUP BY availability_day_id, day_of_week, begin_period, end_period ORDER BY availability_day_id'
+        query = 'SELECT id, begin_period AS start, end_period AS end FROM availability_period WHERE is_booked = FALSE GROUP BY id, begin_period, end_period'
         logger.info("Executing query: %s", query)
         with self._database_connect() as conn:
             with conn.cursor(cursor_factory=DictCursor) as cursor:
@@ -149,26 +175,7 @@ class DatabasePersistence:
         """
         with self._database_connect() as conn:
             with conn.cursor() as cursor:
-                cursor.execute("""
-                    SELECT COUNT(*)
-                    FROM information_schema.tables
-                    WHERE table_schema = 'public' AND table_name = 'availability_day';
-                """)
-                if cursor.fetchone()[0] == 0:
-                    logger.info("Setting up the schema.")
-                    cursor.execute("""
-                        CREATE TABLE availability_day (
-                        id serial PRIMARY KEY,
-                        day_of_week text NOT NULL);
-                    """)
-                    cursor.execute("""
-                            INSERT INTO availability_day 
-                                   (day_of_week) VALUES
-                                   ('Monday'), ('Tuesday'),
-                                   ('Wednesday'), ('Thursday'),
-                                   ('Friday'), ('Saturday'),
-                                   ('Sunday');
-                                """)
+                # Remove availability day table
                 cursor.execute("""
                     SELECT COUNT(*)
                     FROM information_schema.tables
@@ -193,7 +200,6 @@ class DatabasePersistence:
                                 id serial PRIMARY KEY NOT NULL,
                                 begin_period timestamp with time zone NOT NULL,
                                 end_period timestamp with time zone NOT NULL,
-                                availability_day_id integer NOT NULL REFERENCES availability_day (id),
                                 is_booked boolean DEFAULT false,
                                 client_ref_id UUID REFERENCES product_fulfillments(client_ref_id),
                                 CONSTRAINT unique_meeting_datetime UNIQUE (begin_period, end_period)
