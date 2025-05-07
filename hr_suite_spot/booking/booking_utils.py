@@ -48,7 +48,7 @@ def slots_are_valid(slots: list[dict], *, timezone: str = "UTC") -> bool:
 
     return True
 
-def get_booking_slots(database) -> list[list[datetime]]:
+def get_booking_slots(database) -> list[dict]:
     """
     Booking slots to be used by front-end for display.
     Currently is day-of-week agnostic as it doesn't include that data since front-end doesn't need it for appointment picking.
@@ -56,7 +56,7 @@ def get_booking_slots(database) -> list[list[datetime]]:
 
     Input: database reference for connection.
 
-    Returns: dict containing datetime appointment slots.
+    Returns slots as [{'id': int, 'start': ISO}, ...]
     """
     # perform query on availability_period in database to retrieve open time slots
     time_periods = database.retrieve_availability_periods()
@@ -64,8 +64,7 @@ def get_booking_slots(database) -> list[list[datetime]]:
     booking_slots = []
     # Remove the day-of-week info
     for period in time_periods:
-        booking_slots.append([period['start']])
-    
+        booking_slots.append({'id': period['id'], 'start': period['start'].isoformat()})  
     return booking_slots
     
 
