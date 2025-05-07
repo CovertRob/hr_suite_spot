@@ -103,13 +103,11 @@ def require_state_token(session_key='state_token', query_param='token'):
 # Future - improved logging w/ decorator and trace-id's
 
 @app.route('/')
-@set_state_token()
 def home():
     return redirect(url_for('index'))
 
 # Landing page
 @app.route("/index")
-@set_state_token()
 def index():
     title = "HR Suite Spot"
     # return render_template('index_2.html', title = title)
@@ -117,20 +115,17 @@ def index():
 
 # Description page about User
 @app.route("/about")
-@set_state_token()
 def get_about():
     return render_template('about.html')
 
 # General overview of each service provided and provide links to book coaching calls/purchase products
 @app.route("/resources")
-@set_state_token()
 def get_resources():
     return render_template('resources.html')
 
 # General contact page. Should include address for company and contact information to include an email.
 # Also include a contact me form submisson for general inquiries
 @app.route("/contact")
-@set_state_token()
 def get_contact():
     return render_template('contact.html')
 
@@ -138,7 +133,6 @@ def get_contact():
 # Admin page for user to submit their availability to the system for appointments to be booked against.
 @app.route("/calendar-availability", methods=['GET'])
 @auth.login_required
-@set_state_token()
 def get_calendar():
     days_of_week = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
     # Record usage while inside protected endpoint for visibility on actions
@@ -207,29 +201,31 @@ def api_admin_availability():
 
 @app.route("/booking/coaching", methods=["GET"])
 @instantiate_database
-@set_state_token()
 def pick_coaching_call():
     # Get availability periods from database
-    appointments = util.get_booking_slots(g.db) # will need to check this due to table change
-    pprint(appointments)
+    appointments = util.get_booking_slots(g.db)
     # Remove the T for easier management on front-end and convert to ISO str
-    appointments_in_iso = [slot.isoformat().replace('T', ' ') for day in appointments for slot in day]
-    appointments_json = dumps(appointments_in_iso)
-    return render_template('booking.html', appointments=appointments_json)
+    # appointments_in_iso = [slot.isoformat().replace('T', ' ') for day in appointments for slot in day]
+    return render_template('booking.html', appointments=json.dumps(appointments))
 
 @app.route("/booking/coaching/purchase", methods=["POST"])
-@require_state_token()
+@instantiate_database
 def purchase_coaching_call():
-    # Google API requires the 'T':
+    # Google API requires the 'T' in ISO format to be valid payload
     # Need to verify query params are clean before passing
     selected_datetime_utc = request.form['selected_datetime_utc'].replace(' ', 'T')
-
+    slot_id = request.form.get('slot_id')
+    token = g.db.acquire_hold(int(slot_id))
+    if token is None:
+        flash("Someone is holding that slot. Please pick another.", 'error')
+        return redirect(url_for('pick_coaching_call'))
+    
     booking_name = request.form['booking_name']
     booking_email = request.form['booking_email']
     checkout_type = "coaching_call"
     checkout_amount = "1"
     # Redirect to checkout session page with necessary params
-    return redirect(url_for('checkout', booking_name=booking_name, booking_email=booking_email, checkout_type=checkout_type, checkout_amount=checkout_amount, selected_datetime_utc=selected_datetime_utc))
+    return redirect(url_for('checkout', booking_name=booking_name, booking_email=booking_email, checkout_type=checkout_type, checkout_amount=checkout_amount, selected_datetime_utc=selected_datetime_utc, slot_id=slot_id, hold_token=token, heartbeat=30*1000) )# In ms
 
 # In future - allow people to submit message with their booking & upload docs
 def book_coaching_call(db, datetime_utc: str, booking_name: str, booking_email: str, client_ref_id: UUID):
@@ -252,6 +248,24 @@ def book_coaching_call(db, datetime_utc: str, booking_name: str, booking_email: 
     # Return response object to indicate booking was successful
     return meeting.event_states
 
+@app.post("/api/extend_hold")
+@instantiate_database
+def api_extend_hold():
+    # Get appointment slot to hold
+    payload = request.get_json(force=True)
+    # slot_id is PK in database, token is uuid4 representing potential user transaction
+    pprint(payload)
+    g.db.extend_hold(payload["slot_id"], payload["token"])
+    return "", 204
+
+@app.post("/api/release_hold")
+@instantiate_database
+def api_release_hold():
+    payload = request.get_json(force=True)
+    g.db.release_hold(int(payload["slot_id"]), payload["token"])
+    return "", 204
+
+
 @app.errorhandler(404)
 def error_handler(error):
     flash(f"An error occurred.", "error")
@@ -268,7 +282,6 @@ def handle_bad_api_call(error):
 
 # Note: this route requires the submission of query parameters
 @app.route('/create-checkout-session', methods=['POST'])
-@require_state_token()
 def create_checkout_session():
 
     # Get query parameters
@@ -422,7 +435,6 @@ def checkout_success():
 
 @app.route('/return', methods=['GET'])
 @instantiate_database
-# Remove require state token to prevent redirect bugs 05/05/2025
 def checkout_return():
     # Verify that no outside entity is trying to interact with the checkout return route by using session flag
     if not session.get('stripe_checkout_initiated'):
@@ -434,7 +446,7 @@ def checkout_return():
             request.args.to_dict(),
             datetime.now().isoformat()
         )
-        flash("Unauthorized.", 'error')
+        flash("Session expired. Please try again", 'error')
         return redirect(url_for('index'))
     # Reset flag by removing
     session.pop('stripe_checkout_initiated', None)
@@ -472,13 +484,16 @@ def checkout_return():
     return render_template(url_for('index'))
 
 @app.route("/checkout")
-@set_state_token()
 def checkout():
-    return render_template('checkout.html', title='Checkout')
+    query_params = request.args.to_dict()
+    slot_id = query_params.get("slot_id")
+    hold_token = query_params.get("hold_token")
+    heartbeat = int(query_params.get("heartbeat", 30000)) # Default to 30,000 ms
+
+    return render_template('checkout.html', title='Checkout', slot_id=slot_id, hold_token=hold_token, heartbeat=heartbeat)
 
 # Route for subscribe forms
 @app.route("/subscribe", methods=['POST'])
-@require_state_token()
 def mailchimp_handler():
     # Get the email and product type being subscribed to, if any, from the args passed
     user_email = request.form.get('user_email')
@@ -510,7 +525,6 @@ def submit_to_mailchimp(user_email, client_ref_id, journey_tag=None):
     return False
 
 @app.route('/submit-contact-form', methods=['POST'])
-@require_state_token()
 def submit_contact_form():
     email = request.form.get('email', '').strip()
     phone = request.form.get('phone', '').strip()
@@ -562,12 +576,10 @@ def submit_contact_form():
 
 
 @app.route("/subscribe/<product>", methods=['GET'])
-@set_state_token()
 def render_product_subscription(product):
     return render_template('subscribe_template.html', product_type=product)
 
 @app.route("/coach")
-@set_state_token()
 def render_coaching_call():
     return render_template('coaching_call.html')
 
