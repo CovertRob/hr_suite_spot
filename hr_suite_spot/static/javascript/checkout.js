@@ -40,3 +40,33 @@ async function initialize() {
 
   checkout.mount('#checkout');
 }
+
+// checkout.js (loads once per checkout page)
+document.addEventListener("DOMContentLoaded", () => {
+  /* -------- 1. pull config from HTML -------- */
+  const cfgEl     = document.getElementById("checkout-data");
+  if (!cfgEl) return;                            // safety
+
+  const slotId    = cfgEl.dataset.slotId;        // string → backend is int
+  const token     = cfgEl.dataset.holdToken;
+  const interval  = Number(cfgEl.dataset.heartbeat);   // e.g. 30000
+
+  /* -------- 2. heartbeat every N ms -------- */
+  function extend() {
+    fetch("/api/extend_hold", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ slot_id: slotId, token })
+    });
+  }
+  const hb = setInterval(extend, interval);
+
+  /* -------- 3. release instantly on close/back -------- */
+  function release() {
+    navigator.sendBeacon(
+      "/api/release_hold",
+      JSON.stringify({ slot_id: slotId, token })
+    );
+  }
+  window.addEventListener("pagehide", release);      // fires on back/close
+});
