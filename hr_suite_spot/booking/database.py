@@ -7,6 +7,7 @@ import os
 from werkzeug.datastructures import MultiDict
 from pprint import pprint
 from typing import Dict
+from uuid import uuid4
 
 LOG_FORMAT = "%(asctime)s - %(levelname)s - %(message)s"
 logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
@@ -167,6 +168,74 @@ class DatabasePersistence:
                     logger.error(f"Fulfillment insertion failed: {e.args}")
                     return False        
         return fulfillment_status_from_function
+    
+    def acquire_hold(self, slot_id):
+        """Try to place a hold; return token or None."""
+        token = str(uuid4())
+        INITIAL_HOLD_SEC = 60
+        query = """
+                SELECT id
+                FROM availability_period
+                WHERE id = %s
+                AND is_booked = FALSE
+                AND (locked_until IS NULL OR locked_until < NOW())
+                FOR UPDATE SKIP LOCKED
+            """
+        with self._database_connect() as conn:
+            with conn.cursor() as cursor:
+                try:
+                    cursor.execute(query, (slot_id,))
+                    if cursor.fetchone() is None: # If none, its being held
+                        return None
+                except psycopg2.DatabaseError as e:
+                    logger.error(f"Acquire hold query failed: {e.args}")
+                    return None
+            # Place the hold if not none
+                else:
+                    cursor.execute("""
+                        UPDATE availability_period
+                        SET locked_until = NOW() + INTERVAL %s,
+                            hold_token   = %s
+                        WHERE id = %s
+                    """, (f"{INITIAL_HOLD_SEC} seconds", token, slot_id))
+        return token
+
+    def extend_hold(self, slot_id, token):
+        """Return True if successful hold extended, otherwise false."""
+        query = """
+                UPDATE availability_period
+                SET locked_until = NOW() + INTERVAL %s
+                WHERE id = %s AND hold_token = %s AND is_booked = FALSE
+            """
+        HOLD_EXTENSION_SEC = str(30)
+        logger.info(f"Executing query: {query} with args: {slot_id} {token}")
+        with self._database_connect() as conn:
+            with conn.cursor() as cursor:
+                try:
+                    cursor.execute(query, (f"{HOLD_EXTENSION_SEC} seconds", slot_id, token))
+                    return True
+                except psycopg2.DatabaseError as e:
+                    logger.error(f"Extend hold query failed: {e.args}")
+                    return False
+        return False
+
+    def release_hold(self, slot_id, token):
+        """Return True if hold successfully released, otherwise false."""
+        query = """
+                UPDATE availability_period
+                SET locked_until = NULL,
+                    hold_token   = NULL
+                WHERE id = %s AND hold_token = %s AND is_booked = FALSE
+            """
+        with self._database_connect() as conn:
+            with conn.cursor() as cursor:
+                try:
+                    cursor.execute(query, (slot_id, token))
+                    return True
+                except psycopg2.DatabaseError as e:
+                    logger.error(f"Fulfillment insertion failed: {e.args}")
+                    return False
+        return False
 
     # Need to run testing to ensure database created from this matches local environment
     def _setup_schema(self):
@@ -202,6 +271,8 @@ class DatabasePersistence:
                                 end_period timestamp with time zone NOT NULL,
                                 is_booked boolean DEFAULT false,
                                 client_ref_id UUID REFERENCES product_fulfillments(client_ref_id),
+                                locked_until TIMESTAMPTZ,
+                                hold_token TEXT,
                                 CONSTRAINT unique_meeting_datetime UNIQUE (begin_period, end_period)
                                 );""")                
                 self._setup_purchase_fulfillment_function(cursor)
