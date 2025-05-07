@@ -114,7 +114,7 @@ class DatabasePersistence:
 
         Returns raw table data in DictRow format.
         """
-        query = 'SELECT id, begin_period AS start, end_period AS end FROM availability_period WHERE is_booked = FALSE GROUP BY id, begin_period, end_period'
+        query = 'SELECT id, begin_period AS start, end_period AS end FROM availability_period WHERE is_booked = FALSE AND begin_period < NOW() GROUP BY id, begin_period, end_period'
         logger.info("Executing query: %s", query)
         with self._database_connect() as conn:
             with conn.cursor(cursor_factory=DictCursor) as cursor:
