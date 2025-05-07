@@ -4,8 +4,18 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Get the appointments data from the data attribute
   const appointmentPickerElement = document.getElementById('appointment-picker');
-  const availableTimesUTC = JSON.parse(appointmentPickerElement.dataset.appointments);
-  
+
+    // appointments is now an array of objects: [{id: 42, start: "2025-05-08 02:00:00+00"} …]
+    const appointmentsData = JSON.parse(appointmentPickerElement.dataset.appointments);
+
+    const slotMapUTC = new Map();                // iso → slot_id
+    const availableTimesUTC = appointmentsData.map(obj => {
+        // 2025-05-18T14:30:00Z   (always UTC, no offset colon problems)
+        const iso = moment.utc(obj.start).format("YYYY-MM-DDTHH:mm:ssZ");
+        slotMapUTC.set(iso, obj.id);
+        return iso;                              // Array<String>
+    });
+
   // Initialize timezone selector if present
   const timezoneSelector = document.getElementById('timezone-selector');
   if (timezoneSelector) {
@@ -26,7 +36,14 @@ document.addEventListener('DOMContentLoaded', function() {
   timezoneInput.name = 'user_timezone';
   timezoneInput.value = userTimezone;
   document.getElementById('appointment-form').appendChild(timezoneInput);
-  
+
+  // --- NEW hidden field that will carry the DB primary-key ---
+   const slotIdInput = document.createElement('input');
+   slotIdInput.type  = 'hidden';
+   slotIdInput.id    = 'slot-id';
+   slotIdInput.name  = 'slot_id';
+   document.getElementById('appointment-form').appendChild(slotIdInput);
+
   // Initial update of available times based on user's timezone
   updateAvailableTimes(availableTimesUTC, userTimezone);
   
@@ -64,6 +81,14 @@ document.addEventListener('DOMContentLoaded', function() {
               const selectedTime = this.value;
               if (selectedDate && selectedTime) {
                   document.getElementById('selected-datetime').value = `${selectedDate} ${selectedTime}`;
+                  // convert YYYY-MM-DD hh:mm A in the user’s TZ → the exact UTC string
+                 const utcStr = moment
+                     .tz(`${selectedDate} ${selectedTime}`,
+                         'YYYY-MM-DD hh:mm A',
+                         userTimezone)
+                     .utc()
+                     .format("YYYY-MM-DDTHH:mm:ssZZ");       // canonical
+                    slotIdInput.value = slotMapUTC.get(utcStr) || "";
               }
           });
           appointmentPickerElement.after(newTimeSelect);
@@ -121,26 +146,32 @@ document.addEventListener('DOMContentLoaded', function() {
   // Add form submission validation
   document.getElementById("appointment-form").addEventListener("submit", function(event) {
       const selectedDateTime = document.getElementById("selected-datetime").value;
-      const convertedToUTC = moment.tz(selectedDateTime, 'YYYY-MM-DD hh:mm A', userTimezone).utc().format('YYYY-MM-DD HH:mm:ssZ');
-      
-      if (!availableTimesUTC.includes(convertedToUTC)) {
+      const convertedToUTC = moment.tz(selectedDateTime, 'YYYY-MM-DD hh:mm A', userTimezone).utc();
+      const canonicalISO = convertedToUTC.format("YYYY-MM-DDTHH:mm:ssZ");
+
+      if (!availableTimesUTC.includes(canonicalISO)) {
           event.preventDefault();
           document.getElementById("validation-message").style.display = "block";
           return false;
       }
 
-        const diffHours = moment.utc(convertedToUTC).diff(moment.utc(), "hours");
+        const diffHours = convertedToUTC.diff(moment.utc(), 'hours');
         if (diffHours < 12) {
         event.preventDefault();
         alert("Please choose a time at least 12 hours from now.");
         return false;
-    }
+        }
+        /* ---------- guarantee slot_id is set ---------- */
+        const slotIdInput = document.getElementById("slot-id");
+        if (!slotIdInput.value) {
+        slotIdInput.value = slotMapUTC.get(canonicalISO) || "";
+        }
       
       // Store the selected time in UTC for submission
       const utcDateTimeInput = document.createElement('input');
       utcDateTimeInput.type = 'hidden';
       utcDateTimeInput.name = 'selected_datetime_utc';
-      utcDateTimeInput.value = convertedToUTC;
+      utcDateTimeInput.value = canonicalISO
       this.appendChild(utcDateTimeInput);
   });
 
