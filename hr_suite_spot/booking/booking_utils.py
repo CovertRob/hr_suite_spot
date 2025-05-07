@@ -58,7 +58,7 @@ def get_booking_slots(database) -> list[list[datetime]]:
 
     Returns: dict containing datetime appointment slots.
     """
-    # perform query on availability_period in database to retrieve open time slots for each day of the week
+    # perform query on availability_period in database to retrieve open time slots
     time_periods = database.retrieve_availability_periods()
     # Return dictionary containing segmented booking slots
     booking_slots = []
