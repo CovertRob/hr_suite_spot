@@ -56,7 +56,7 @@ class BookingService:
                     {"createRequest": {"requestId": f"{uuid4().hex}", "conferenceSolutionKey": {"type": "hangoutsMeet"}}},
                  "reminders": {"useDefault": True}
                  }
-        event = service.events().insert(calendarId=BUSINESS_EMAIL, sendNotifications=True, body=event, conferenceDataVersion=1).execute()
+        event = service.events().insert(calendarId=BUSINESS_EMAIL, sendNotifications=True, body=event, conferenceDataVersion=1, sendUpdates='all').execute()
 
         return event
 

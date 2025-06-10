@@ -234,8 +234,15 @@ def book_coaching_call(db, datetime_utc: str, booking_name: str, booking_email: 
     end_time = (datetime.fromisoformat(start_time) + timedelta(minutes=30)).isoformat()
     # Create meeting resource with the googleapiclient:
     try:
-        meeting = booking_service.BookingService({booking_name: booking_email}, {"start": f"{start_time}",
+        # Add in admin so email notification pops up - added fix 06/09/2025
+        meeting = booking_service.BookingService({booking_name: booking_email, "admin": "hello@hrsuitespot.com"}, {"start": f"{start_time}",
         "end": f"{end_time}"}, 'Coaching Call')
+
+        # Send email notification to admin of booking so they see it
+        gmail_client = gmail.GmailIntegration()
+        notification = gmail_client.create_message("hello@hrsuitespot.com", "cto@hrsuitespot.com", "Coaching Call Purchase", "A coaching call has been booked on the website. Please check your calendar.")
+        send_message = (gmail_client.service.users().messages().send(userId='me', body=notification).execute())
+        
     except HttpError as e:
         raise # re-raise the error to be caught by the error-handler
     # Will execute if no exception is raised
